@@ -21,11 +21,16 @@ async function getLatestMutationCycle() {
   return messages
     .map((message) => {
       try {
-        const expedition = message.content.split("**")[1];
-        const mutations = message.content.split("`")[1].split(", ");
+        const content = message.content.split("\n").map((line) => {
+          const expedition = line.split("**")[1];
+          const mutations = line.split("`")[1].split(", ");
+          return {
+            expedition,
+            mutations,
+          };
+        });
         return {
-          expedition,
-          mutations,
+          content,
           imageSrc: message.attachments.at(0)?.url,
           timestamp: message.createdTimestamp,
         };
