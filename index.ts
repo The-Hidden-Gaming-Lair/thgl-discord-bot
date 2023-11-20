@@ -17,7 +17,7 @@ async function getLatestMutationCycle() {
   if (!channel) {
     throw new Error(`Channel ${MUTATION_CYCLE_CHANNEL_ID} not found`);
   }
-  const messages = await channel.messages.fetch({ limit: 3 });
+  const messages = await channel.messages.fetch({ limit: 10 });
   return messages
     .map((message) => {
       try {
@@ -27,6 +27,7 @@ async function getLatestMutationCycle() {
           expedition,
           mutations,
           imageSrc: message.attachments.at(0)?.url,
+          timestamp: message.createdTimestamp,
         };
       } catch (error) {
         console.error(error);
