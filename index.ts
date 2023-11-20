@@ -18,15 +18,22 @@ async function getLatestMutationCycle() {
     throw new Error(`Channel ${MUTATION_CYCLE_CHANNEL_ID} not found`);
   }
   const messages = await channel.messages.fetch({ limit: 3 });
-  return messages.map((message) => {
-    const expedition = message.content.split("**")[1];
-    const mutations = message.content.split("`")[1].split(", ");
-    return {
-      expedition,
-      mutations,
-      imageSrc: message.attachments.at(0)?.url,
-    };
-  });
+  return messages
+    .map((message) => {
+      try {
+        const expedition = message.content.split("**")[1];
+        const mutations = message.content.split("`")[1].split(", ");
+        return {
+          expedition,
+          mutations,
+          imageSrc: message.attachments.at(0)?.url,
+        };
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 Bun.serve({
   async fetch(req) {
