@@ -1,5 +1,7 @@
 import { getClient, initDiscord } from "./lib/discord";
+import { ClientResponse } from "./lib/http";
 import { handleMutationCycle } from "./routes/mutation-cycle/route";
+import { handleUpdates } from "./routes/updates/route";
 
 await initDiscord();
 const client = getClient();
@@ -9,8 +11,11 @@ Bun.serve({
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname.startsWith("/api/mutation-cycle")) {
-      return handleMutationCycle(req);
+      return handleMutationCycle(req, url);
     }
-    return new Response("404!");
+    if (url.pathname.startsWith("/api/updates")) {
+      return handleUpdates(req, url);
+    }
+    return new ClientResponse("404!", { status: 404 });
   },
 });
