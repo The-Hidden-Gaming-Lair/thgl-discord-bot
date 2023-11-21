@@ -1,21 +1,38 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
 
-let client: Client<boolean>;
+let _client: Client<boolean>;
 
 export function initDiscord() {
   return new Promise<void>((resolve) => {
-    client = new Client({ intents: [GatewayIntentBits.Guilds] });
-    client.login(process.env.DISCORD_TOKEN);
+    _client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    _client.login(process.env.DISCORD_TOKEN);
 
-    client.once(Events.ClientReady, (c) => {
+    _client.once(Events.ClientReady, (c) => {
       resolve();
     });
   });
 }
 
 export function getClient() {
-  if (!client?.isReady()) {
+  if (!_client?.isReady()) {
     throw new Error("Discord client not ready");
   }
-  return client;
+  return _client;
+}
+
+export function getTextChannel(id: string) {
+  const client = getClient();
+  const channel = client.channels.cache.get(id);
+  if (!channel) {
+    throw new Error(`Channel ${id} not found`);
+  }
+  if (!channel.isTextBased()) {
+    throw new Error(`Channel ${id} is not text based`);
+  }
+  return channel;
+}
+
+export function getChannelMessages(id: string, limit: number) {
+  const channel = getTextChannel(id);
+  return channel.messages.fetch({ limit });
 }
