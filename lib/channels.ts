@@ -58,6 +58,10 @@ export const UPDATES_CHANNELS: {
     name: "hogwarts-legacy-map",
     id: "1064862000150237264",
   },
+  {
+    name: "skeleton",
+    id: "918959476734824468",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -111,5 +115,13 @@ export const INFO_CHANNELS: {
   {
     name: "hogwarts-legacy-map",
     id: "1105085426940788737",
+  },
+  {
+    name: "new-world-influence-updates",
+    id: "1105049554799312917",
+  },
+  {
+    name: "skeleton",
+    id: "1105086068866420798",
   },
 ];
