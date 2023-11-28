@@ -1,4 +1,4 @@
-export const CHANNELS: {
+export const UPDATES_CHANNELS: {
   name: string;
   id: string;
 }[] = [
@@ -57,5 +57,59 @@ export const CHANNELS: {
   {
     name: "hogwarts-legacy-map",
     id: "1064862000150237264",
+  },
+];
+
+export const INFO_CHANNELS: {
+  name: string;
+  id: string;
+}[] = [
+  {
+    name: "aeternum-map",
+    id: "1105082545860771870",
+  },
+  {
+    name: "aeternum-tracker",
+    id: "1159115209911308418",
+  },
+  {
+    name: "diablo4-map",
+    id: "1114135497351102554",
+  },
+  {
+    name: "palia-map",
+    id: "1148606598529429594",
+  },
+  {
+    name: "palia-tracker",
+    id: "1151591363180232759",
+  },
+  {
+    name: "diablo4-companion",
+    id: "1124004114536349821",
+  },
+  {
+    name: "new-world-companion",
+    id: "1105117768463954021",
+  },
+  {
+    name: "sons-of-the-forest-map",
+    id: "1105087197545255012",
+  },
+  {
+    name: "arkesia-map",
+    id: "1105083909970083950",
+  },
+  {
+    name: "trophy-hunter",
+    id: "1105084713061851238",
+  },
+  {
+    name: "songs-of-conquest",
+    id: "1105086603522736248",
+  },
+  {
+    name: "hogwarts-legacy-map",
+    id: "1105085426940788737",
   },
 ];

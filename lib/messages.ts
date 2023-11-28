@@ -1,12 +1,12 @@
 import { Message } from "discord.js";
 import { getChannelMessages } from "./discord";
 
-export async function getUpdates(id: string) {
+export async function getMessages(id: string) {
   const messages = await getChannelMessages(id, 5);
-  return messages.map(toUpdate);
+  return messages.map(toMessage);
 }
 
-function toUpdate(message: Message) {
+function toMessage(message: Message) {
   return {
     text: message.cleanContent,
     images: message.attachments

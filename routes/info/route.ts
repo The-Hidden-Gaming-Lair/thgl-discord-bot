@@ -1,18 +1,18 @@
-import { UPDATES_CHANNELS } from "../../lib/channels";
+import { INFO_CHANNELS } from "../../lib/channels";
 import { ClientResponse } from "../../lib/http";
 import { getMessages } from "../../lib/messages";
 
-export async function handleUpdates(req: Request, url: URL) {
+export async function handleInfo(req: Request, url: URL) {
   if (req.method === "GET") {
     const channelName = url.pathname.split("/")[3];
     if (!channelName) {
-      const channels = UPDATES_CHANNELS.map((channel) => ({
+      const channels = INFO_CHANNELS.map((channel) => ({
         name: channel.name,
         link: `${url}/${channel.name}`,
       }));
       return ClientResponse.json(channels);
     }
-    const channel = UPDATES_CHANNELS.find(
+    const channel = INFO_CHANNELS.find(
       (channel) => channel.name === channelName
     );
     if (!channel) {

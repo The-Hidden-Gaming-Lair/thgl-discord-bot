@@ -1,5 +1,6 @@
 import { getClient, initDiscord } from "./lib/discord";
 import { ClientResponse } from "./lib/http";
+import { handleInfo } from "./routes/info/route";
 import { handleMutationCycle } from "./routes/mutation-cycle/route";
 import { handleUpdates } from "./routes/updates/route";
 
@@ -15,6 +16,9 @@ Bun.serve({
     }
     if (url.pathname.startsWith("/api/updates")) {
       return handleUpdates(req, url);
+    }
+    if (url.pathname.startsWith("/api/info")) {
+      return handleInfo(req, url);
     }
     return new ClientResponse("404!", { status: 404 });
   },
