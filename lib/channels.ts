@@ -62,6 +62,14 @@ export const UPDATES_CHANNELS: {
     name: "skeleton",
     id: "918959476734824468",
   },
+  {
+    name: "palworld",
+    id: "1198571864755277895",
+  },
+  {
+    name: "once-human",
+    id: "1196793877458321458",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -123,5 +131,13 @@ export const INFO_CHANNELS: {
   {
     name: "skeleton",
     id: "1105086068866420798",
+  },
+  {
+    name: "palworld",
+    id: "1198571785587798126",
+  },
+  {
+    name: "once-human",
+    id: "1196793835523674132",
   },
 ];
