@@ -1,22 +1,30 @@
 import { setVoiceChannelName } from "./discord";
 
-const APP_ID = "ebafpjfhleenmkcmdhlbdchpdalblhiellgfmmbb";
-const DOWNLOADS_CHANNEL_ID = "1201441207688114246";
-const VERSION_CHANNEL_ID = "1201446317709332540";
-
 export async function refreshPalworldStatus() {
-  const downloads = await getDownloads();
+  const downloads = await getDownloads(
+    "ebafpjfhleenmkcmdhlbdchpdalblhiellgfmmbb"
+  );
   const version = await getVersion();
-  await setVoiceChannelName(DOWNLOADS_CHANNEL_ID, `Downloads: ${downloads}`);
-  await setVoiceChannelName(VERSION_CHANNEL_ID, `Version: ${version}`);
+  await setVoiceChannelName("1201441207688114246", `Downloads: ${downloads}`);
+  await setVoiceChannelName("1201446317709332540", `Version: ${version}`);
+  const currentAppVisitors = await getCurrentVisitors("palworld.th.gl-app");
+  const currentWebVisitors = await getCurrentVisitors("palworld.th.gl");
+  await setVoiceChannelName(
+    "1201479460306829322",
+    `Online App: ${currentAppVisitors}`
+  );
+  await setVoiceChannelName(
+    "1201479576287723601",
+    `Online Web: ${currentWebVisitors}`
+  );
 }
 
-export async function getDownloads() {
+export async function getDownloads(appId: string) {
   const response = await fetch(
-    `https://storeapi.overwolf.com/apps/download-counter?appids=[%22${APP_ID}%22]&r=${Date.now()}`
+    `https://storeapi.overwolf.com/apps/download-counter?appids=[%22${appId}%22]&r=${Date.now()}`
   );
   const json = (await response.json()) as Record<string, string>;
-  return json[APP_ID];
+  return json[appId];
 }
 
 export async function getVersion() {
@@ -31,4 +39,12 @@ export async function getVersion() {
   );
   const json = (await response.json()) as any;
   return json.meta.version;
+}
+
+export async function getCurrentVisitors(siteId: string) {
+  const response = await fetch(
+    `https://apps.machens.dev/api/stats/${siteId}/current-visitors?auth=${process.env.PLAUSIBLE_AUTH_TOKEN}`
+  );
+  const currentVsitors = await response.text();
+  return currentVsitors;
 }
