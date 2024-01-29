@@ -5,10 +5,16 @@ export async function refreshPalworldStatus() {
     "ebafpjfhleenmkcmdhlbdchpdalblhiellgfmmbb"
   );
   const version = await getVersion();
+  const currentAppVisitors = await getCurrentVisitors(
+    "palworld.th.gl-app",
+    process.env.PALWORLD_APP_PLAUSIBLE_AUTH_TOKEN!
+  );
+  const currentWebVisitors = await getCurrentVisitors(
+    "palworld.th.gl",
+    process.env.PALWORLD_WEB_PLAUSIBLE_AUTH_TOKEN!
+  );
   await setVoiceChannelName("1201441207688114246", `Downloads: ${downloads}`);
   await setVoiceChannelName("1201446317709332540", `Version: ${version}`);
-  const currentAppVisitors = await getCurrentVisitors("palworld.th.gl-app");
-  const currentWebVisitors = await getCurrentVisitors("palworld.th.gl");
   await setVoiceChannelName(
     "1201479460306829322",
     `Online App: ${currentAppVisitors}`
@@ -41,9 +47,9 @@ export async function getVersion() {
   return json.meta.version;
 }
 
-export async function getCurrentVisitors(siteId: string) {
+export async function getCurrentVisitors(siteId: string, auth: string) {
   const response = await fetch(
-    `https://apps.machens.dev/api/stats/${siteId}/current-visitors?auth=${process.env.PLAUSIBLE_AUTH_TOKEN}`
+    `https://apps.machens.dev/api/stats/${siteId}/current-visitors?auth=${auth}`
   );
   const currentVsitors = await response.text();
   return currentVsitors;
