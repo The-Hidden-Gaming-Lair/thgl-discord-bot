@@ -13,7 +13,7 @@ export async function refreshPalworldStatus() {
 
 export async function getDownloads() {
   const response = await fetch(
-    `https://storeapi.overwolf.com/apps/download-counter?appids=[%22${APP_ID}%22]`
+    `https://storeapi.overwolf.com/apps/download-counter?appids=[%22${APP_ID}%22]&r=${Date.now()}`
   );
   const json = (await response.json()) as Record<string, string>;
   return json[APP_ID];
