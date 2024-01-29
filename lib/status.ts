@@ -7,8 +7,8 @@ const VERSION_CHANNEL_ID = "1201446317709332540";
 export async function refreshPalworldStatus() {
   const downloads = await getDownloads();
   const version = await getVersion();
-  setVoiceChannelName(DOWNLOADS_CHANNEL_ID, `Downloads: ${downloads}`);
-  setVoiceChannelName(VERSION_CHANNEL_ID, `Version: ${version}`);
+  await setVoiceChannelName(DOWNLOADS_CHANNEL_ID, `Downloads: ${downloads}`);
+  await setVoiceChannelName(VERSION_CHANNEL_ID, `Version: ${version}`);
 }
 
 export async function getDownloads() {

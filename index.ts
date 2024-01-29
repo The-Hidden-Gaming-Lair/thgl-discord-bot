@@ -25,7 +25,7 @@ Bun.serve({
   },
 });
 
-refreshPalworldStatus();
-setInterval(() => {
-  refreshPalworldStatus();
-}, 60000);
+while (true) {
+  await refreshPalworldStatus();
+  await new Promise((resolve) => setTimeout(resolve, 60000));
+}
