@@ -49,7 +49,7 @@ export async function getVersion() {
 
 export async function getCurrentVisitors(siteId: string, auth: string) {
   const response = await fetch(
-    `https://apps.machens.dev/api/stats/${siteId}/current-visitors?auth=${auth}`
+    `https://metrics.th.gl/api/stats/${siteId}/current-visitors?auth=${auth}`
   );
   const currentVsitors = await response.text();
   return currentVsitors;
