@@ -70,6 +70,10 @@ export const UPDATES_CHANNELS: {
     name: "once-human",
     id: "1196793877458321458",
   },
+  {
+    name: "nightingale",
+    id: "1212299437569867777",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -139,5 +143,9 @@ export const INFO_CHANNELS: {
   {
     name: "once-human",
     id: "1196793835523674132",
+  },
+  {
+    name: "nightingale",
+    id: "1212299408620920872",
   },
 ];
