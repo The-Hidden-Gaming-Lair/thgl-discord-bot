@@ -74,6 +74,10 @@ export const UPDATES_CHANNELS: {
     name: "nightingale",
     id: "1212299437569867777",
   },
+  {
+    name: "night-crows",
+    id: "1217421560386818088",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -147,5 +151,9 @@ export const INFO_CHANNELS: {
   {
     name: "nightingale",
     id: "1212299408620920872",
+  },
+  {
+    name: "night-crows",
+    id: "1217421510260559892",
   },
 ];
