@@ -78,6 +78,10 @@ export const UPDATES_CHANNELS: {
     name: "night-crows",
     id: "1217421560386818088",
   },
+  {
+    name: "seekers-of-skyveil",
+    id: "1225105797038473226",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -155,5 +159,9 @@ export const INFO_CHANNELS: {
   {
     name: "night-crows",
     id: "1217421510260559892",
+  },
+  {
+    name: "seekers-of-skyveil",
+    id: "1225105774326579221",
   },
 ];
