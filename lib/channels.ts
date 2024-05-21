@@ -82,6 +82,10 @@ export const UPDATES_CHANNELS: {
     name: "seekers-of-skyveil",
     id: "1225105797038473226",
   },
+  {
+    name: "pax-dei",
+    id: "1234393071299596309",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -163,5 +167,9 @@ export const INFO_CHANNELS: {
   {
     name: "seekers-of-skyveil",
     id: "1225105774326579221",
+  },
+  {
+    name: "pax-dei",
+    id: "1234393041318707292",
   },
 ];
