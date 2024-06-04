@@ -86,6 +86,10 @@ export const UPDATES_CHANNELS: {
     name: "pax-dei",
     id: "1234393071299596309",
   },
+  {
+    name: "wuthering-waves",
+    id: "1247540622835974257",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -171,5 +175,9 @@ export const INFO_CHANNELS: {
   {
     name: "pax-dei",
     id: "1234393041318707292",
+  },
+  {
+    name: "wuthering-waves",
+    id: "1247540599033430138",
   },
 ];
