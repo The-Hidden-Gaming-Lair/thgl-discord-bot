@@ -90,6 +90,10 @@ export const UPDATES_CHANNELS: {
     name: "wuthering-waves",
     id: "1247540622835974257",
   },
+  {
+    name: "stormgate",
+    id: "1270279370300194826",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -179,5 +183,9 @@ export const INFO_CHANNELS: {
   {
     name: "wuthering-waves",
     id: "1247540599033430138",
+  },
+  {
+    name: "stormgate",
+    id: "1270279342378717205",
   },
 ];
