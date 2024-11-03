@@ -94,6 +94,10 @@ export const UPDATES_CHANNELS: {
     name: "stormgate",
     id: "1270279370300194826",
   },
+  {
+    name: "satisfactory",
+    id: "1302557334446407700",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -187,5 +191,9 @@ export const INFO_CHANNELS: {
   {
     name: "stormgate",
     id: "1270279342378717205",
+  },
+  {
+    name: "satisfactory",
+    id: "1302557304822173706",
   },
 ];
