@@ -19,11 +19,11 @@ export const UPDATES_CHANNELS: {
     id: "1159116919249575978",
   },
   {
-    name: "diablo4-map",
+    name: "diablo4",
     id: "1114136338036441201",
   },
   {
-    name: "palia-map",
+    name: "palia",
     id: "1148606632494895145",
   },
   {
@@ -113,11 +113,11 @@ export const INFO_CHANNELS: {
     id: "1159115209911308418",
   },
   {
-    name: "diablo4-map",
+    name: "diablo4",
     id: "1114135497351102554",
   },
   {
-    name: "palia-map",
+    name: "palia",
     id: "1148606598529429594",
   },
   {
