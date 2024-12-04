@@ -98,6 +98,10 @@ export const UPDATES_CHANNELS: {
     name: "satisfactory",
     id: "1302557334446407700",
   },
+  {
+    name: "infinity-nikki",
+    id: "1313829928856322048",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -195,5 +199,9 @@ export const INFO_CHANNELS: {
   {
     name: "satisfactory",
     id: "1302557304822173706",
+  },
+  {
+    name: "infinity-nikki",
+    id: "1313829213488549909",
   },
 ];
