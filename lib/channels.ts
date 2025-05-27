@@ -106,6 +106,10 @@ export const UPDATES_CHANNELS: {
     name: "avowed",
     id: "1339985812430917706",
   },
+  {
+    name: "dune-awakening",
+    id: "1376831284411629629",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -211,5 +215,9 @@ export const INFO_CHANNELS: {
   {
     name: "avowed",
     id: "1339985779669336166",
+  },
+  {
+    name: "dune-awakening",
+    id: "1376831252698497055",
   },
 ];
