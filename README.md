@@ -1,7 +1,5 @@
 # The Hidden Gaming Lair — Discord Bot
 
-## 🧠 Overview
-
 This is the official Discord bot for [The Hidden Gaming Lair](https://www.th.gl), built with [Bun](https://bun.sh).  
 It provides an API that exposes content from the **updates** and **info** channels of the THGL Discord community.
 
