@@ -110,6 +110,18 @@ export const UPDATES_CHANNELS: {
     name: "dune-awakening",
     id: "1376831284411629629",
   },
+  {
+    name: "chrono-odyssey",
+    id: "1386716236976492694",
+  },
+  {
+    name: "soulframe",
+    id: "1400750444720029726",
+  },
+  {
+    name: "grounded2",
+    id: "1400751543573282876",
+  },
 ];
 
 export const INFO_CHANNELS: {
@@ -219,5 +231,17 @@ export const INFO_CHANNELS: {
   {
     name: "dune-awakening",
     id: "1376831252698497055",
+  },
+  {
+    name: "chrono-odyssey",
+    id: "1386715922500157571",
+  },
+  {
+    name: "soulframe",
+    id: "1400750363992133632",
+  },
+  {
+    name: "grounded2",
+    id: "1400751489131216937",
   },
 ];
