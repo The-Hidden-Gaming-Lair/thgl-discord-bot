@@ -71,10 +71,6 @@ export const UPDATES_CHANNELS: {
     id: "1196793877458321458",
   },
   {
-    name: "nightingale",
-    id: "1212299437569867777",
-  },
-  {
     name: "night-crows",
     id: "1217421560386818088",
   },
@@ -89,10 +85,6 @@ export const UPDATES_CHANNELS: {
   {
     name: "wuthering-waves",
     id: "1247540622835974257",
-  },
-  {
-    name: "stormgate",
-    id: "1270279370300194826",
   },
   {
     name: "satisfactory",
@@ -193,10 +185,6 @@ export const INFO_CHANNELS: {
     id: "1196793835523674132",
   },
   {
-    name: "nightingale",
-    id: "1212299408620920872",
-  },
-  {
     name: "night-crows",
     id: "1217421510260559892",
   },
@@ -211,10 +199,6 @@ export const INFO_CHANNELS: {
   {
     name: "wuthering-waves",
     id: "1247540599033430138",
-  },
-  {
-    name: "stormgate",
-    id: "1270279342378717205",
   },
   {
     name: "satisfactory",
