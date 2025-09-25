@@ -49,8 +49,3 @@ export function getChannelMessages(id: string, limit: number) {
   const channel = getTextChannel(id);
   return channel.messages.fetch({ limit });
 }
-
-export async function setVoiceChannelName(id: string, name: string) {
-  const channel = getVoiceChannel(id);
-  await channel.setName(name);
-}
