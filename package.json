@@ -10,9 +10,9 @@
     "bun-types": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "5.9.2"
   },
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "14.22.1"
   }
 }
