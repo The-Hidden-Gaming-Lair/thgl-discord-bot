@@ -63,30 +63,53 @@ export async function getForumPosts(id: string, limit?: number) {
 
   // Fetch all active threads
   const activeThreads = await channel.threads.fetchActive();
+  const activeThreadsList = [...activeThreads.threads.values()];
+
+  // If limit is specified and we already have enough from active threads, return early
+  if (limit && activeThreadsList.length >= limit) {
+    return activeThreadsList
+      .sort((a, b) => (b.createdTimestamp || 0) - (a.createdTimestamp || 0))
+      .slice(0, limit);
+  }
+
+  // Calculate how many archived threads we need
+  const remainingNeeded = limit ? limit - activeThreadsList.length : undefined;
 
   // Fetch archived threads - Discord API limits to 100 per request
-  // We'll fetch multiple times if needed to get all archived threads
   const archivedThreads: any[] = [];
   let hasMore = true;
   let before: string | undefined = undefined;
 
   while (hasMore) {
+    // If we have a limit and already collected enough, break early
+    if (remainingNeeded && archivedThreads.length >= remainingNeeded) {
+      break;
+    }
     const batch = await channel.threads.fetchArchived({
-      limit: 100,
-      before
+      limit: remainingNeeded
+        ? Math.min(100, remainingNeeded - archivedThreads.length)
+        : 100,
+      before,
     });
-
-    archivedThreads.push(...batch.threads.values());
+    const values = [...batch.threads.values()];
+    archivedThreads.push(...values);
 
     // Check if there are more threads to fetch
+
     hasMore = batch.hasMore || false;
     if (hasMore && batch.threads.size > 0) {
       // Get the oldest thread's ID from this batch to use as 'before' for next fetch
-      const oldestThread = [...batch.threads.values()].sort((a, b) => {
-        const aTime = a.archiveTimestamp ?
-          (typeof a.archiveTimestamp === 'number' ? a.archiveTimestamp : a.archiveTimestamp.getTime()) : 0;
-        const bTime = b.archiveTimestamp ?
-          (typeof b.archiveTimestamp === 'number' ? b.archiveTimestamp : b.archiveTimestamp.getTime()) : 0;
+      const oldestThread = [...values].sort((a, b) => {
+        const aTime = a.archiveTimestamp
+          ? typeof a.archiveTimestamp === "number"
+            ? a.archiveTimestamp
+            : a.archiveTimestamp.getTime()
+          : 0;
+        const bTime = b.archiveTimestamp
+          ? typeof b.archiveTimestamp === "number"
+            ? b.archiveTimestamp
+            : b.archiveTimestamp.getTime()
+          : 0;
         return aTime - bTime;
       })[0];
       before = oldestThread?.id;
@@ -94,11 +117,12 @@ export async function getForumPosts(id: string, limit?: number) {
   }
 
   // Combine active and archived threads
-  const allThreads = [...activeThreads.threads.values(), ...archivedThreads];
+  const allThreads = [...activeThreadsList, ...archivedThreads];
 
   // Sort by creation time (newest first)
-  const sortedThreads = allThreads
-    .sort((a, b) => (b.createdTimestamp || 0) - (a.createdTimestamp || 0));
+  const sortedThreads = allThreads.sort(
+    (a, b) => (b.createdTimestamp || 0) - (a.createdTimestamp || 0)
+  );
 
   // Apply limit if specified, otherwise return all
   return limit ? sortedThreads.slice(0, limit) : sortedThreads;

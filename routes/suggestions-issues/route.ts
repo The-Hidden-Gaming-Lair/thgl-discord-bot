@@ -11,14 +11,20 @@ export async function handleSuggestionsIssues(req: Request, url: URL) {
 
       if (postId) {
         // Fetch single post with all replies
-        const post = await getSingleForumPost(SUGGESTIONS_ISSUES_CHANNEL.id, postId);
+        const post = await getSingleForumPost(
+          SUGGESTIONS_ISSUES_CHANNEL.id,
+          postId
+        );
         return ClientResponse.json(post);
       } else {
         // Get limit from query parameter, default to all posts (no limit)
         const limitParam = url.searchParams.get("limit");
         const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 
-        const posts = await getForumPostsData(SUGGESTIONS_ISSUES_CHANNEL.id, limit);
+        const posts = await getForumPostsData(
+          SUGGESTIONS_ISSUES_CHANNEL.id,
+          limit
+        );
         return ClientResponse.json(posts);
       }
     } catch (error) {

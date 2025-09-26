@@ -10,6 +10,7 @@ console.log(`Ready! Logged in as ${client.user.tag}`);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
+  idleTimeout: 20,
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname.startsWith("/api/updates")) {

@@ -9,21 +9,14 @@ export async function getForumPostsData(id: string, limit?: number) {
   const availableTags = forumChannel.availableTags;
   const postsData = await Promise.all(
     threads.map(async (thread: ThreadChannel) => {
-      // Fetch the starter message (first post in the thread)
-      const starterMessage = await thread.fetchStarterMessage();
-
-      // Fetch some recent replies
-      const messages = await thread.messages.fetch({ limit: 5 });
-      const replies = messages
-        .filter((msg) => msg.id !== starterMessage?.id)
-        .map((msg) => ({
-          author: msg.author.username,
-          text: msg.cleanContent,
-          timestamp: msg.createdTimestamp,
-          images: msg.attachments
-            .filter((att) => att.contentType?.startsWith("image"))
-            .map((att) => att.url),
-        }));
+      let starterMessage;
+      try {
+        // Fetch the starter message (first post in the thread)
+        starterMessage = await thread.fetchStarterMessage();
+      } catch (error: any) {
+        // Continue with null starterMessage
+        starterMessage = null;
+      }
 
       // Convert tag IDs to tag names/labels
       const tags = thread.appliedTags
@@ -57,7 +50,6 @@ export async function getForumPostsData(id: string, limit?: number) {
               .filter((att) => att.contentType?.startsWith("image"))
               .map((att) => att.url) || [],
         },
-        recentReplies: replies.reverse(), // Show oldest reply first
       };
     })
   );
