@@ -32,6 +32,9 @@ This Discord bot exposes API endpoints for THGL Discord channel content:
 
 - `/api/updates/{channel-name}` - Returns last 5 messages from update channels
 - `/api/info/{channel-name}` - Returns last 5 messages from info channels
+- `/api/suggestions-issues` - Returns all forum posts from suggestions-issues forum channel (includes title, content, recent replies, tags, and metadata)
+  - Optional: `?limit=N` - Limit number of posts returned
+- `/api/suggestions-issues/{postId}` - Returns single forum post with ALL replies, reactions, and full details
 - Root endpoints list available channels with links
 
 **Message Processing** (`lib/messages.ts`):

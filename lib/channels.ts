@@ -116,6 +116,11 @@ export const UPDATES_CHANNELS: {
   },
 ];
 
+export const SUGGESTIONS_ISSUES_CHANNEL = {
+  name: "suggestions-issues",
+  id: "1021543411293106217",
+};
+
 export const INFO_CHANNELS: {
   name: string;
   id: string;

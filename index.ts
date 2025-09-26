@@ -1,13 +1,15 @@
 import { getClient, initDiscord } from "./lib/discord";
 import { ClientResponse } from "./lib/http";
 import { handleInfo } from "./routes/info/route";
+import { handleSuggestionsIssues } from "./routes/suggestions-issues/route";
 import { handleUpdates } from "./routes/updates/route";
 
 await initDiscord();
 const client = getClient();
 console.log(`Ready! Logged in as ${client.user.tag}`);
 
-Bun.serve({
+const server = Bun.serve({
+  port: process.env.PORT || 3000,
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname.startsWith("/api/updates")) {
@@ -16,6 +18,11 @@ Bun.serve({
     if (url.pathname.startsWith("/api/info")) {
       return handleInfo(req, url);
     }
+    if (url.pathname.startsWith("/api/suggestions-issues")) {
+      return handleSuggestionsIssues(req, url);
+    }
     return new ClientResponse("404!", { status: 404 });
   },
 });
+
+console.log(`Server running at http://localhost:${server.port}`);
