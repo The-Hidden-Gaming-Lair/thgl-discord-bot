@@ -62,25 +62,25 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
 
   // Fetch the specific thread
   const thread =
-    forumChannel.threads.cache.get(threadId) ||
-    (await forumChannel.threads.fetch(threadId));
+    forumChannel.threads.cache.get(threadId) ??
+    (await forumChannel.threads.fetch(threadId).catch(() => null));
 
   if (!thread) {
-    throw new Error(`Thread ${threadId} not found`);
+    return null;
   }
 
   // Get available tags from the forum channel
   const availableTags = forumChannel.availableTags;
 
   // Fetch the starter message
-  const starterMessage = await thread.fetchStarterMessage();
+  const starterMessage = await thread.fetchStarterMessage().catch(() => null);
 
   // Fetch ALL messages from the thread (up to 100)
   const allMessages = await thread.messages.fetch({ limit: 100 });
 
   // Sort messages by timestamp (oldest first) and filter out starter message
   const replies = allMessages
-    .filter((msg) => msg.id !== starterMessage?.id)
+    .filter((msg) => !starterMessage || msg.id !== starterMessage.id)
     .sort((a, b) => (a.createdTimestamp || 0) - (b.createdTimestamp || 0))
     .map((msg) => ({
       id: msg.id,

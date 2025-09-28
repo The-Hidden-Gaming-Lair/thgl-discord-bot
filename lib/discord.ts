@@ -7,7 +7,7 @@ export function initDiscord() {
     _client = new Client({ intents: [GatewayIntentBits.Guilds] });
     _client.login(process.env.DISCORD_TOKEN);
 
-    _client.once(Events.ClientReady, (c) => {
+    _client.once(Events.ClientReady, () => {
       resolve();
     });
   });
@@ -73,43 +73,53 @@ export async function getForumPosts(id: string, limit?: number) {
   }
 
   // Calculate how many archived threads we need
-  const remainingNeeded = limit ? limit - activeThreadsList.length : undefined;
+  const remainingNeeded = limit
+    ? Math.max(limit - activeThreadsList.length, 0)
+    : undefined;
 
   // Fetch archived threads - Discord API limits to 100 per request
   const archivedThreads: any[] = [];
   let hasMore = true;
-  let before: string | undefined = undefined;
+  let before: string | undefined;
 
   while (hasMore) {
     // If we have a limit and already collected enough, break early
     if (remainingNeeded && archivedThreads.length >= remainingNeeded) {
       break;
     }
+
+    const remaining =
+      remainingNeeded !== undefined
+        ? remainingNeeded - archivedThreads.length
+        : undefined;
+
+    if (remaining !== undefined && remaining <= 0) {
+      break;
+    }
+
+    const batchLimit =
+      remaining !== undefined ? Math.min(100, remaining) : 100;
+
     const batch = await channel.threads.fetchArchived({
-      limit: remainingNeeded
-        ? Math.min(100, remainingNeeded - archivedThreads.length)
-        : 100,
+      limit: Math.max(1, batchLimit),
       before,
     });
     const values = [...batch.threads.values()];
     archivedThreads.push(...values);
 
     // Check if there are more threads to fetch
-
-    hasMore = batch.hasMore || false;
+    hasMore = batch.hasMore ?? false;
     if (hasMore && batch.threads.size > 0) {
       // Get the oldest thread's ID from this batch to use as 'before' for next fetch
       const oldestThread = [...values].sort((a, b) => {
-        const aTime = a.archiveTimestamp
-          ? typeof a.archiveTimestamp === "number"
+        const aTime =
+          typeof a.archiveTimestamp === "number"
             ? a.archiveTimestamp
-            : a.archiveTimestamp.getTime()
-          : 0;
-        const bTime = b.archiveTimestamp
-          ? typeof b.archiveTimestamp === "number"
+            : a.archiveTimestamp?.getTime() ?? 0;
+        const bTime =
+          typeof b.archiveTimestamp === "number"
             ? b.archiveTimestamp
-            : b.archiveTimestamp.getTime()
-          : 0;
+            : b.archiveTimestamp?.getTime() ?? 0;
         return aTime - bTime;
       })[0];
       before = oldestThread?.id;
