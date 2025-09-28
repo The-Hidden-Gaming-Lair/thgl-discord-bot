@@ -7,8 +7,7 @@ export async function handleSuggestionsIssues(req: Request, url: URL) {
     try {
       // Check if a specific post ID is requested
       const pathParts = url.pathname.split("/");
-      const postId = pathParts[4]; // /api/suggestions-issues/{postId}
-
+      const postId = pathParts[3]; // /api/suggestions-issues/{postId}
       if (postId) {
         // Fetch single post with all replies
         const post = await getSingleForumPost(
