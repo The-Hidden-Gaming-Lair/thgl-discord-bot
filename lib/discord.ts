@@ -1,6 +1,33 @@
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits, ThreadChannel } from "discord.js";
 
 let _client: Client<boolean>;
+
+const DISCORD_EPOCH = 1420070400000n;
+
+function timestampFromSnowflake(id: string) {
+  try {
+    const snowflake = BigInt(id);
+    return Number((snowflake >> 22n) + DISCORD_EPOCH);
+  } catch {
+    return null;
+  }
+}
+
+function toMillis(value?: number | Date | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+
+  return null;
+}
 
 export function initDiscord() {
   return new Promise<void>((resolve) => {
@@ -58,17 +85,37 @@ export function getForumChannel(id: string) {
   return channel;
 }
 
+function getThreadActivityTimestamp(thread: ThreadChannel) {
+  const lastMessageTimestamp =
+    thread.lastMessage?.createdTimestamp ??
+    (thread.lastMessageId ? timestampFromSnowflake(thread.lastMessageId) : null);
+
+  const lastPinTimestamp = toMillis(thread.lastPinTimestamp);
+  const archiveTimestamp = toMillis(thread.archiveTimestamp);
+
+  return (
+    lastMessageTimestamp ??
+    lastPinTimestamp ??
+    archiveTimestamp ??
+    thread.createdTimestamp ??
+    0
+  );
+}
+
 export async function getForumPosts(id: string, limit?: number) {
   const channel = getForumChannel(id);
 
   // Fetch all active threads
   const activeThreads = await channel.threads.fetchActive();
-  const activeThreadsList = [...activeThreads.threads.values()];
+  const activeThreadsList = [...activeThreads.threads.values()] as ThreadChannel[];
 
   // If limit is specified and we already have enough from active threads, return early
   if (limit && activeThreadsList.length >= limit) {
     return activeThreadsList
-      .sort((a, b) => (b.createdTimestamp || 0) - (a.createdTimestamp || 0))
+      .sort(
+        (a, b) =>
+          getThreadActivityTimestamp(b) - getThreadActivityTimestamp(a),
+      )
       .slice(0, limit);
   }
 
@@ -78,7 +125,7 @@ export async function getForumPosts(id: string, limit?: number) {
     : undefined;
 
   // Fetch archived threads - Discord API limits to 100 per request
-  const archivedThreads: any[] = [];
+  const archivedThreads: ThreadChannel[] = [];
   let hasMore = true;
   let before: string | undefined;
 
@@ -104,7 +151,7 @@ export async function getForumPosts(id: string, limit?: number) {
       limit: Math.max(1, batchLimit),
       before,
     });
-    const values = [...batch.threads.values()];
+    const values = [...batch.threads.values()] as ThreadChannel[];
     archivedThreads.push(...values);
 
     // Check if there are more threads to fetch
@@ -127,11 +174,14 @@ export async function getForumPosts(id: string, limit?: number) {
   }
 
   // Combine active and archived threads
-  const allThreads = [...activeThreadsList, ...archivedThreads];
+  const allThreads: ThreadChannel[] = [
+    ...activeThreadsList,
+    ...archivedThreads,
+  ];
 
-  // Sort by creation time (newest first)
+  // Sort by latest activity (newest first)
   const sortedThreads = allThreads.sort(
-    (a, b) => (b.createdTimestamp || 0) - (a.createdTimestamp || 0)
+    (a, b) => getThreadActivityTimestamp(b) - getThreadActivityTimestamp(a)
   );
 
   // Apply limit if specified, otherwise return all
