@@ -1,6 +1,53 @@
 import { ForumChannel, ThreadChannel } from "discord.js";
 import { getForumChannel, getForumPosts } from "./discord";
 
+type ForumAvailableTag = ForumChannel["availableTags"][number];
+
+type ApiForumTag = {
+  id: string;
+  name: string;
+  moderated: boolean;
+  emoji: {
+    id: string | null;
+    name: string | null;
+    animated: boolean;
+    url: string | null;
+  } | null;
+};
+
+function mapTag(tag: ForumAvailableTag | undefined | null): ApiForumTag | null {
+  if (!tag) {
+    return null;
+  }
+
+  const emoji = tag.emoji
+    ? {
+        id: tag.emoji.id ?? null,
+        name: tag.emoji.name ?? null,
+        animated: tag.emoji.animated ?? false,
+        url: tag.emoji.id
+          ? `https://cdn.discordapp.com/emojis/${tag.emoji.id}.${tag.emoji.animated ? "gif" : "png"}`
+          : null,
+      }
+    : null;
+
+  return {
+    id: tag.id,
+    name: tag.name,
+    moderated: tag.moderated,
+    emoji,
+  };
+}
+
+function mapThreadTags(
+  appliedTags: string[],
+  availableTags: ForumChannel["availableTags"],
+) {
+  return appliedTags
+    .map((tagId) => mapTag(availableTags.find((tag) => tag.id === tagId)))
+    .filter((tag): tag is ApiForumTag => tag !== null);
+}
+
 export async function getForumPostsData(id: string, limit?: number) {
   const forumChannel = getForumChannel(id) as ForumChannel;
   const threads = await getForumPosts(id, limit);
@@ -19,19 +66,7 @@ export async function getForumPostsData(id: string, limit?: number) {
       }
 
       // Convert tag IDs to tag names/labels
-      const tags = thread.appliedTags
-        .map((tagId) => {
-          const tag = availableTags.find((t) => t.id === tagId);
-          return tag
-            ? {
-                id: tag.id,
-                name: tag.name,
-                emoji: tag.emoji?.name || null,
-                moderated: tag.moderated,
-              }
-            : null;
-        })
-        .filter((tag) => tag !== null);
+      const tags = mapThreadTags(thread.appliedTags, availableTags);
 
       return {
         id: thread.id,
@@ -51,7 +86,7 @@ export async function getForumPostsData(id: string, limit?: number) {
               .map((att) => att.url) || [],
         },
       };
-    })
+    }),
   );
 
   return postsData;
@@ -101,19 +136,7 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
     }));
 
   // Convert tag IDs to tag names/labels
-  const tags = thread.appliedTags
-    .map((tagId) => {
-      const tag = availableTags.find((t) => t.id === tagId);
-      return tag
-        ? {
-            id: tag.id,
-            name: tag.name,
-            emoji: tag.emoji?.name || null,
-            moderated: tag.moderated,
-          }
-        : null;
-    })
-    .filter((tag) => tag !== null);
+  const tags = mapThreadTags(thread.appliedTags, availableTags);
 
   return {
     id: thread.id,
