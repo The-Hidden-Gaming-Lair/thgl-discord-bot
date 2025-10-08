@@ -114,6 +114,10 @@ export const UPDATES_CHANNELS: {
     name: "grounded2",
     id: "1400751543573282876",
   },
+  {
+    name: "blue-protocol-star-resonance",
+    id: "1425525855509151824",
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
@@ -232,5 +236,9 @@ export const INFO_CHANNELS: {
   {
     name: "grounded2",
     id: "1400751489131216937",
+  },
+  {
+    name: "blue-protocol-star-resonance",
+    id: "1425525600831143946",
   },
 ];
