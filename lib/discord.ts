@@ -1,4 +1,10 @@
-import { Client, Events, GatewayIntentBits, ThreadChannel } from "discord.js";
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  ThreadChannel,
+  ChannelType,
+} from "discord.js";
 
 let _client: Client<boolean>;
 
@@ -75,6 +81,75 @@ export function getVoiceChannel(id: string) {
 export function getChannelMessages(id: string, limit: number) {
   const channel = getTextChannel(id);
   return channel.messages.fetch({ limit });
+}
+
+/**
+ * Get all accessible channels with category information
+ */
+export function getAllChannels() {
+  const client = getClient();
+  const channels = [];
+
+  for (const [id, channel] of client.channels.cache) {
+    // Skip voice channels, categories themselves, and stage channels
+    if (
+      channel.type === ChannelType.GuildVoice ||
+      channel.type === ChannelType.GuildCategory ||
+      channel.type === ChannelType.GuildStageVoice
+    ) {
+      continue;
+    }
+
+    // Get parent category info if available
+    let categoryName = null;
+    let categoryId = null;
+    if ("parent" in channel && channel.parent) {
+      categoryName = channel.parent.name;
+      categoryId = channel.parent.id;
+    }
+
+    // Get channel name
+    const channelName = "name" in channel ? channel.name : "unknown";
+
+    // Determine channel type
+    let channelTypeName = "unknown";
+    switch (channel.type) {
+      case ChannelType.GuildText:
+        channelTypeName = "text";
+        break;
+      case ChannelType.GuildForum:
+        channelTypeName = "forum";
+        break;
+      case ChannelType.GuildAnnouncement:
+        channelTypeName = "announcement";
+        break;
+      case ChannelType.PublicThread:
+      case ChannelType.PrivateThread:
+      case ChannelType.AnnouncementThread:
+        channelTypeName = "thread";
+        break;
+    }
+
+    channels.push({
+      id,
+      name: channelName,
+      type: channelTypeName,
+      category: categoryName,
+      categoryId: categoryId,
+      // Create a readable identifier with category
+      fullName: categoryName ? `${categoryName}/${channelName}` : channelName,
+    });
+  }
+
+  // Sort by category, then by name
+  return channels.sort((a, b) => {
+    if (a.category !== b.category) {
+      if (!a.category) return 1;
+      if (!b.category) return -1;
+      return a.category.localeCompare(b.category);
+    }
+    return a.name.localeCompare(b.name);
+  });
 }
 
 export function getForumChannel(id: string) {

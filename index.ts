@@ -3,6 +3,7 @@ import { ClientResponse } from "./lib/http";
 import { handleInfo } from "./routes/info/route";
 import { handleSuggestionsIssues } from "./routes/suggestions-issues/route";
 import { handleUpdates } from "./routes/updates/route";
+import { handleMcpApi } from "./routes/mcp-api/route";
 
 await initDiscord();
 const client = getClient();
@@ -21,6 +22,9 @@ const server = Bun.serve({
     }
     if (url.pathname.startsWith("/api/suggestions-issues")) {
       return handleSuggestionsIssues(req, url);
+    }
+    if (url.pathname.startsWith("/api/mcp")) {
+      return handleMcpApi(req, url);
     }
     return new ClientResponse("404!", { status: 404 });
   },
