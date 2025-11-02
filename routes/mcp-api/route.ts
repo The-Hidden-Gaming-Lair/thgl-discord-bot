@@ -1,5 +1,6 @@
 import { ClientResponse } from "../../lib/http";
 import { getChannelMessages, getAllChannels } from "../../lib/discord";
+import { getForumPostsData, getSingleForumPost } from "../../lib/forum";
 import type { Message } from "discord.js";
 
 /**
@@ -102,14 +103,16 @@ export async function handleMcpApi(req: Request, url: URL) {
     return new ClientResponse("Method not allowed", { status: 405 });
   }
 
-  const endpoint = pathParts[2]; // 'messages' or 'search'
+  const endpoint = pathParts[2]; // 'messages', 'search', 'reactions', or 'forum'
 
   if (endpoint === "messages") {
-    // GET /api/mcp/messages?channel=announcements&limit=10
+    // GET /api/mcp/messages?channel=announcements&limit=10&after=1698518400000
     // channel can be: ID, name, or "category/name"
+    // after: optional timestamp in milliseconds - only return messages after this time
     if (req.method === "GET") {
       const channelIdentifier = url.searchParams.get("channel");
       const limit = parseInt(url.searchParams.get("limit") || "10", 10);
+      const afterParam = url.searchParams.get("after");
 
       if (!channelIdentifier) {
         return ClientResponse.json(
@@ -129,8 +132,25 @@ export async function handleMcpApi(req: Request, url: URL) {
       }
 
       try {
-        const messages = await getChannelMessages(channel.id, Math.min(limit, 100));
-        const formattedMessages = messages.map(formatMessage);
+        const messages = await getChannelMessages(
+          channel.id,
+          Math.min(limit, 100)
+        );
+
+        // Filter by timestamp if provided
+        let filteredMessages = messages;
+        if (afterParam) {
+          const afterTimestamp = parseInt(afterParam, 10);
+          if (isNaN(afterTimestamp)) {
+            return ClientResponse.json(
+              { error: "'after' parameter must be a valid timestamp in milliseconds" },
+              { status: 400 }
+            );
+          }
+          filteredMessages = messages.filter((msg) => msg.createdTimestamp > afterTimestamp);
+        }
+
+        const formattedMessages = filteredMessages.map(formatMessage);
 
         return ClientResponse.json({
           channel: channel.name,
@@ -175,9 +195,14 @@ export async function handleMcpApi(req: Request, url: URL) {
       }
 
       try {
-        const messages = await getChannelMessages(channel.id, Math.min(limit, 100));
+        const messages = await getChannelMessages(
+          channel.id,
+          Math.min(limit, 100)
+        );
         const matchingMessages = messages
-          .filter((msg) => msg.cleanContent.toLowerCase().includes(query.toLowerCase()))
+          .filter((msg) =>
+            msg.cleanContent.toLowerCase().includes(query.toLowerCase())
+          )
           .map(formatMessage);
 
         return ClientResponse.json({
@@ -202,7 +227,10 @@ export async function handleMcpApi(req: Request, url: URL) {
     // GET /api/mcp/reactions?channel=announcements&min_reactions=5&limit=50
     if (req.method === "GET") {
       const channelIdentifier = url.searchParams.get("channel");
-      const minReactions = parseInt(url.searchParams.get("min_reactions") || "5", 10);
+      const minReactions = parseInt(
+        url.searchParams.get("min_reactions") || "5",
+        10
+      );
       const limit = parseInt(url.searchParams.get("limit") || "50", 10);
 
       if (!channelIdentifier) {
@@ -223,7 +251,10 @@ export async function handleMcpApi(req: Request, url: URL) {
       }
 
       try {
-        const messages = await getChannelMessages(channel.id, Math.min(limit, 100));
+        const messages = await getChannelMessages(
+          channel.id,
+          Math.min(limit, 100)
+        );
         const messagesWithReactions = messages
           .filter((msg) => {
             const totalReactions = msg.reactions.cache.reduce(
@@ -241,6 +272,76 @@ export async function handleMcpApi(req: Request, url: URL) {
           min_reactions: minReactions,
           count: messagesWithReactions.length,
           messages: messagesWithReactions,
+        });
+      } catch (error) {
+        return ClientResponse.json(
+          { error: error instanceof Error ? error.message : "Unknown error" },
+          { status: 500 }
+        );
+      }
+    }
+    return new ClientResponse("Method not allowed", { status: 405 });
+  }
+
+  if (endpoint === "forum") {
+    // GET /api/mcp/forum?channel=FORUM_CHANNEL_ID&limit=50&after=1698518400000
+    // Returns forum posts (threads) from a forum channel
+    // after: optional timestamp in milliseconds - only return posts created/updated after this time
+    if (req.method === "GET") {
+      const channelIdentifier = url.searchParams.get("channel");
+      const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+      const afterParam = url.searchParams.get("after");
+
+      if (!channelIdentifier) {
+        return ClientResponse.json(
+          { error: "Missing 'channel' parameter" },
+          { status: 400 }
+        );
+      }
+
+      const channel = findChannel(channelIdentifier);
+      if (!channel) {
+        return ClientResponse.json(
+          {
+            error: `Channel '${channelIdentifier}' not found. Use GET /api/mcp to list all channels.`,
+          },
+          { status: 404 }
+        );
+      }
+
+      // Check if it's a forum channel
+      if (channel.type !== "GuildForum") {
+        return ClientResponse.json(
+          {
+            error: `Channel '${channel.name}' is not a forum channel. Type: ${channel.type}`,
+          },
+          { status: 400 }
+        );
+      }
+
+      try {
+        const posts = await getForumPostsData(channel.id, Math.min(limit, 100));
+
+        // Filter by timestamp if provided
+        let filteredPosts = posts;
+        if (afterParam) {
+          const afterTimestamp = parseInt(afterParam, 10);
+          if (isNaN(afterTimestamp)) {
+            return ClientResponse.json(
+              { error: "'after' parameter must be a valid timestamp in milliseconds" },
+              { status: 400 }
+            );
+          }
+          filteredPosts = posts.filter((post: any) => post.createdAt > afterTimestamp);
+        }
+
+        return ClientResponse.json({
+          channel: channel.name,
+          fullName: channel.fullName,
+          category: channel.category,
+          type: channel.type,
+          count: filteredPosts.length,
+          posts: filteredPosts,
         });
       } catch (error) {
         return ClientResponse.json(
