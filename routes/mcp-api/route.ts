@@ -309,8 +309,8 @@ export async function handleMcpApi(req: Request, url: URL) {
         );
       }
 
-      // Check if it's a forum channel
-      if (channel.type !== "GuildForum") {
+      // Check if it's a forum channel (accept both "GuildForum" and "forum")
+      if (channel.type !== "GuildForum" && channel.type !== "forum") {
         return ClientResponse.json(
           {
             error: `Channel '${channel.name}' is not a forum channel. Type: ${channel.type}`,
