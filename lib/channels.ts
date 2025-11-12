@@ -118,6 +118,10 @@ export const UPDATES_CHANNELS: {
     name: "blue-protocol-star-resonance",
     id: "1425525855509151824",
   },
+  {
+    name: "duet-night-abyss",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {

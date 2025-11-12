@@ -37,7 +37,13 @@ function toMillis(value?: number | Date | null) {
 
 export function initDiscord() {
   return new Promise<void>((resolve) => {
-    _client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    _client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+      ],
+    });
     _client.login(process.env.DISCORD_TOKEN);
 
     _client.once(Events.ClientReady, () => {
