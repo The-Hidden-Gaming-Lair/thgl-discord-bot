@@ -126,6 +126,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "wuthering-waves",
     channelId: "1247540622835974257",
+    roleIds: ["1247541675430248588"],
     titleKeywords: ["wuthering waves"],
   },
   {
@@ -157,6 +158,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "soulframe",
     channelId: "1400750444720029726",
+    roleIds: ["1400750833381019698"],
     titleKeywords: ["soulframe"],
   },
   {
@@ -167,6 +169,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "blue-protocol-star-resonance",
     channelId: "1425525855509151824",
+    roleIds: ["1425524646723321890"],
     titleKeywords: ["blue protocol: star resonance", "blue protocol star resonance"],
   },
   {
