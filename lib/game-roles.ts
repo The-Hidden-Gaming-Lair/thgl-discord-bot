@@ -137,6 +137,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "infinity-nikki",
     channelId: "1313829928856322048",
+    roleIds: ["1313828748113739827"],
     titleKeywords: ["infinity nikki"],
   },
   {
