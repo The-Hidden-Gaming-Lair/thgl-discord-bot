@@ -179,6 +179,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1435978166257717349"],
     titleKeywords: ["duet night abyss"],
   },
+  {
+    name: "thgl-companion-app",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1445860743181369509"],
+    titleKeywords: ["thgl companion app", "companion app"],
+  },
 ];
 
 /**
