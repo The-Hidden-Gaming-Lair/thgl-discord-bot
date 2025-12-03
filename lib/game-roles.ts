@@ -185,6 +185,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1445860743181369509"],
     titleKeywords: ["thgl companion app", "companion app"],
   },
+  {
+    name: "rsdragonwilds",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1362543092267352084"],
+    titleKeywords: ["runescape: dragonwilds", "dragonwilds", "dragon wilds"],
+  },
 ];
 
 /**

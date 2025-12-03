@@ -126,6 +126,10 @@ export const UPDATES_CHANNELS: {
     name: "thgl-companion-app",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "rsdragonwilds",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
