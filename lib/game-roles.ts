@@ -45,11 +45,13 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "diablo4",
     channelId: "1114136338036441201",
+    roleIds: ["1114134751767445514"],
     titleKeywords: ["diablo 4", "diablo iv"],
   },
   {
     name: "palia",
     channelId: "1148606632494895145",
+    roleIds: ["1148611968874332160"],
     titleKeywords: ["palia"],
   },
   {
@@ -91,6 +93,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "hogwarts-legacy-map",
     channelId: "1064862000150237264",
+    roleIds: ["1064862519606382623"],
     titleKeywords: ["hogwarts legacy"],
   },
   {
@@ -101,11 +104,13 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "palworld",
     channelId: "1198571864755277895",
+    roleIds: ["1198570762399912017"],
     titleKeywords: ["palworld"],
   },
   {
     name: "once-human",
     channelId: "1196793877458321458",
+    roleIds: ["1196793465925816340"],
     titleKeywords: ["once human"],
   },
   {
@@ -121,6 +126,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "pax-dei",
     channelId: "1234393071299596309",
+    roleIds: ["1234393960185724978"],
     titleKeywords: ["pax dei"],
   },
   {
@@ -132,6 +138,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "satisfactory",
     channelId: "1302557334446407700",
+    roleIds: ["1302556864596283453"],
     titleKeywords: ["satisfactory"],
   },
   {
@@ -143,6 +150,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "avowed",
     channelId: "1339985812430917706",
+    roleIds: ["1339986247115870278"],
     titleKeywords: ["avowed"],
   },
   {
