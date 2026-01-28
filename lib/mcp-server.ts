@@ -51,11 +51,35 @@ function formatMessage(message: Message) {
       url: att.url,
       contentType: att.contentType,
       name: att.name,
+      size: att.size,
+      description: att.description,
     })),
     embeds: message.embeds.map((embed) => ({
       title: embed.title,
       description: embed.description,
       url: embed.url,
+      color: embed.color,
+      timestamp: embed.timestamp,
+      author: embed.author ? {
+        name: embed.author.name,
+        url: embed.author.url,
+        iconURL: embed.author.iconURL,
+      } : null,
+      footer: embed.footer ? {
+        text: embed.footer.text,
+        iconURL: embed.footer.iconURL,
+      } : null,
+      thumbnail: embed.thumbnail ? {
+        url: embed.thumbnail.url,
+      } : null,
+      image: embed.image ? {
+        url: embed.image.url,
+      } : null,
+      fields: embed.fields.map((field) => ({
+        name: field.name,
+        value: field.value,
+        inline: field.inline,
+      })),
     })),
     reactions: message.reactions.cache.map((reaction) => ({
       emoji: reaction.emoji.name,

@@ -84,6 +84,40 @@ export async function getForumPostsData(id: string, limit?: number) {
             starterMessage?.attachments
               .filter((att) => att.contentType?.startsWith("image"))
               .map((att) => att.url) || [],
+          attachments: starterMessage?.attachments.map((att) => ({
+            url: att.url,
+            contentType: att.contentType,
+            name: att.name,
+            size: att.size,
+            description: att.description,
+          })) || [],
+          embeds: starterMessage?.embeds.map((embed) => ({
+            title: embed.title,
+            description: embed.description,
+            url: embed.url,
+            color: embed.color,
+            timestamp: embed.timestamp,
+            author: embed.author ? {
+              name: embed.author.name,
+              url: embed.author.url,
+              iconURL: embed.author.iconURL,
+            } : null,
+            footer: embed.footer ? {
+              text: embed.footer.text,
+              iconURL: embed.footer.iconURL,
+            } : null,
+            thumbnail: embed.thumbnail ? {
+              url: embed.thumbnail.url,
+            } : null,
+            image: embed.image ? {
+              url: embed.image.url,
+            } : null,
+            fields: embed.fields.map((field) => ({
+              name: field.name,
+              value: field.value,
+              inline: field.inline,
+            })),
+          })) || [],
         },
       };
     }),
@@ -129,6 +163,40 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
       images: msg.attachments
         .filter((att) => att.contentType?.startsWith("image"))
         .map((att) => att.url),
+      attachments: msg.attachments.map((att) => ({
+        url: att.url,
+        contentType: att.contentType,
+        name: att.name,
+        size: att.size,
+        description: att.description,
+      })),
+      embeds: msg.embeds.map((embed) => ({
+        title: embed.title,
+        description: embed.description,
+        url: embed.url,
+        color: embed.color,
+        timestamp: embed.timestamp,
+        author: embed.author ? {
+          name: embed.author.name,
+          url: embed.author.url,
+          iconURL: embed.author.iconURL,
+        } : null,
+        footer: embed.footer ? {
+          text: embed.footer.text,
+          iconURL: embed.footer.iconURL,
+        } : null,
+        thumbnail: embed.thumbnail ? {
+          url: embed.thumbnail.url,
+        } : null,
+        image: embed.image ? {
+          url: embed.image.url,
+        } : null,
+        fields: embed.fields.map((field) => ({
+          name: field.name,
+          value: field.value,
+          inline: field.inline,
+        })),
+      })),
       reactions: msg.reactions.cache.map((reaction) => ({
         emoji: reaction.emoji.name,
         count: reaction.count,
@@ -160,6 +228,40 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
         starterMessage?.attachments
           .filter((att) => att.contentType?.startsWith("image"))
           .map((att) => att.url) || [],
+      attachments: starterMessage?.attachments.map((att) => ({
+        url: att.url,
+        contentType: att.contentType,
+        name: att.name,
+        size: att.size,
+        description: att.description,
+      })) || [],
+      embeds: starterMessage?.embeds.map((embed) => ({
+        title: embed.title,
+        description: embed.description,
+        url: embed.url,
+        color: embed.color,
+        timestamp: embed.timestamp,
+        author: embed.author ? {
+          name: embed.author.name,
+          url: embed.author.url,
+          iconURL: embed.author.iconURL,
+        } : null,
+        footer: embed.footer ? {
+          text: embed.footer.text,
+          iconURL: embed.footer.iconURL,
+        } : null,
+        thumbnail: embed.thumbnail ? {
+          url: embed.thumbnail.url,
+        } : null,
+        image: embed.image ? {
+          url: embed.image.url,
+        } : null,
+        fields: embed.fields.map((field) => ({
+          name: field.name,
+          value: field.value,
+          inline: field.inline,
+        })),
+      })) || [],
       reactions:
         starterMessage?.reactions.cache.map((reaction) => ({
           emoji: reaction.emoji.name,
