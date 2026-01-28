@@ -265,7 +265,18 @@ export async function startMCPServer() {
 
           const messages = await getChannelMessages(channel.id, limit);
           const matchingMessages = messages
-            .filter((msg) => msg.cleanContent.toLowerCase().includes(query))
+            .filter((msg) => {
+              if (msg.cleanContent.toLowerCase().includes(query)) return true;
+              for (const embed of msg.embeds) {
+                if (embed.title?.toLowerCase().includes(query)) return true;
+                if (embed.description?.toLowerCase().includes(query)) return true;
+                for (const field of embed.fields) {
+                  if (field.name.toLowerCase().includes(query)) return true;
+                  if (field.value.toLowerCase().includes(query)) return true;
+                }
+              }
+              return false;
+            })
             .map(formatMessage);
 
           return {

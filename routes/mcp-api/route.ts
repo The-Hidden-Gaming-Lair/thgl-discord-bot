@@ -65,6 +65,35 @@ function formatMessage(message: Message) {
       url: att.url,
       contentType: att.contentType,
       name: att.name,
+      size: att.size,
+      description: att.description,
+    })),
+    embeds: message.embeds.map((embed) => ({
+      title: embed.title,
+      description: embed.description,
+      url: embed.url,
+      color: embed.color,
+      timestamp: embed.timestamp,
+      author: embed.author ? {
+        name: embed.author.name,
+        url: embed.author.url,
+        iconURL: embed.author.iconURL,
+      } : null,
+      footer: embed.footer ? {
+        text: embed.footer.text,
+        iconURL: embed.footer.iconURL,
+      } : null,
+      thumbnail: embed.thumbnail ? {
+        url: embed.thumbnail.url,
+      } : null,
+      image: embed.image ? {
+        url: embed.image.url,
+      } : null,
+      fields: embed.fields.map((field) => ({
+        name: field.name,
+        value: field.value,
+        inline: field.inline,
+      })),
     })),
     reactions: message.reactions.cache.map((reaction) => ({
       emoji: reaction.emoji.name,
@@ -199,10 +228,22 @@ export async function handleMcpApi(req: Request, url: URL) {
           channel.id,
           Math.min(limit, 100)
         );
+        const lowerQuery = query.toLowerCase();
         const matchingMessages = messages
-          .filter((msg) =>
-            msg.cleanContent.toLowerCase().includes(query.toLowerCase())
-          )
+          .filter((msg) => {
+            // Search in message content
+            if (msg.cleanContent.toLowerCase().includes(lowerQuery)) return true;
+            // Search in embed titles, descriptions, and field values
+            for (const embed of msg.embeds) {
+              if (embed.title?.toLowerCase().includes(lowerQuery)) return true;
+              if (embed.description?.toLowerCase().includes(lowerQuery)) return true;
+              for (const field of embed.fields) {
+                if (field.name.toLowerCase().includes(lowerQuery)) return true;
+                if (field.value.toLowerCase().includes(lowerQuery)) return true;
+              }
+            }
+            return false;
+          })
           .map(formatMessage);
 
         return ClientResponse.json({
