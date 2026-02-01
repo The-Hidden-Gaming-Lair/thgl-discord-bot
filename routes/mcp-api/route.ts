@@ -1,5 +1,5 @@
 import { ClientResponse } from "../../lib/http";
-import { getChannelMessages, getAllChannels } from "../../lib/discord";
+import { getChannelMessages, getAllChannels, deleteMessage } from "../../lib/discord";
 import { getForumPostsData, getSingleForumPost } from "../../lib/forum";
 import type { Message } from "discord.js";
 
@@ -383,6 +383,50 @@ export async function handleMcpApi(req: Request, url: URL) {
           type: channel.type,
           count: filteredPosts.length,
           posts: filteredPosts,
+        });
+      } catch (error) {
+        return ClientResponse.json(
+          { error: error instanceof Error ? error.message : "Unknown error" },
+          { status: 500 }
+        );
+      }
+    }
+    return new ClientResponse("Method not allowed", { status: 405 });
+  }
+
+  if (endpoint === "message") {
+    // DELETE /api/mcp/message?channel=app-debug&message_id=123456789
+    // Deletes a message from a channel
+    if (req.method === "DELETE") {
+      const channelIdentifier = url.searchParams.get("channel");
+      const messageId = url.searchParams.get("message_id");
+
+      if (!channelIdentifier || !messageId) {
+        return ClientResponse.json(
+          { error: "Missing 'channel' or 'message_id' parameter" },
+          { status: 400 }
+        );
+      }
+
+      const channel = findChannel(channelIdentifier);
+      if (!channel) {
+        return ClientResponse.json(
+          {
+            error: `Channel '${channelIdentifier}' not found. Use GET /api/mcp to list all channels.`,
+          },
+          { status: 404 }
+        );
+      }
+
+      try {
+        await deleteMessage(channel.id, messageId);
+
+        return ClientResponse.json({
+          success: true,
+          channel: channel.name,
+          fullName: channel.fullName,
+          messageId,
+          message: "Message deleted successfully",
         });
       } catch (error) {
         return ClientResponse.json(
