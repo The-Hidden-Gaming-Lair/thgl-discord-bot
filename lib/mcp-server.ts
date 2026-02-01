@@ -4,7 +4,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { getChannelMessages, getAllChannels } from "./discord";
+import { getChannelMessages, getAllChannels, deleteMessage } from "./discord";
 import type { Message } from "discord.js";
 
 /**
@@ -196,6 +196,25 @@ export async function startMCPServer() {
             required: ["channel"],
           },
         },
+        {
+          name: "delete_message",
+          description:
+            "Delete a message from a Discord channel. Useful for cleaning up resolved crash logs or outdated messages.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              channel: {
+                type: "string",
+                description: "Channel identifier: name, ID, or 'category/name'",
+              },
+              message_id: {
+                type: "string",
+                description: "The ID of the message to delete",
+              },
+            },
+            required: ["channel", "message_id"],
+          },
+        },
       ],
     };
   });
@@ -360,6 +379,44 @@ export async function startMCPServer() {
                     min_reactions: minReactions,
                     count: messagesWithReactions.length,
                     messages: messagesWithReactions,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        case "delete_message": {
+          const channelIdentifier = args.channel as string;
+          const messageId = args.message_id as string;
+
+          const channel = findChannel(channelIdentifier);
+          if (!channel) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Channel '${channelIdentifier}' not found. Use get_channel_list to see available channels.`,
+                },
+              ],
+            };
+          }
+
+          await deleteMessage(channel.id, messageId);
+
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  {
+                    success: true,
+                    channel: channel.name,
+                    fullName: channel.fullName,
+                    messageId,
+                    message: "Message deleted successfully",
                   },
                   null,
                   2

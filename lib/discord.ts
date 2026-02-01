@@ -183,6 +183,13 @@ function getThreadActivityTimestamp(thread: ThreadChannel) {
   );
 }
 
+export async function deleteMessage(channelId: string, messageId: string) {
+  const channel = getTextChannel(channelId);
+  const message = await channel.messages.fetch(messageId);
+  await message.delete();
+  return { success: true, messageId };
+}
+
 export async function getForumPosts(id: string, limit?: number) {
   const channel = getForumChannel(id);
 
