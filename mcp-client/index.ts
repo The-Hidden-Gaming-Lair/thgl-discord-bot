@@ -187,6 +187,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "get_all_recent_messages",
+        description:
+          "Get all messages across ALL Discord channels since a given timestamp. Returns only channels with activity, sorted by message count. Useful for catching up on everything that happened since a point in time.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            after: {
+              type: "number",
+              description:
+                "Timestamp in milliseconds - return all messages after this time (required)",
+            },
+            per_channel_limit: {
+              type: "number",
+              description:
+                "Maximum messages to fetch per channel (1-100, default: 50)",
+              minimum: 1,
+              maximum: 100,
+            },
+          },
+          required: ["after"],
+        },
+      },
+      {
         name: "delete_message",
         description:
           "Delete a message from a Discord channel. Useful for cleaning up resolved crash logs or outdated messages.",
@@ -291,6 +314,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (after !== undefined) params.after = after;
 
         const result = await apiRequest("/forum", { params });
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "get_all_recent_messages": {
+        const after = args?.after as number;
+        const per_channel_limit = args?.per_channel_limit as
+          | number
+          | undefined;
+
+        const params: Record<string, string | number> = { after };
+        if (per_channel_limit !== undefined)
+          params.per_channel_limit = per_channel_limit;
+
+        const result = await apiRequest("/all-messages", { params });
         return {
           content: [
             {

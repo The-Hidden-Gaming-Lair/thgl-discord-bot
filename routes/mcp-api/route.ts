@@ -394,6 +394,114 @@ export async function handleMcpApi(req: Request, url: URL) {
     return new ClientResponse("Method not allowed", { status: 405 });
   }
 
+  if (endpoint === "all-messages") {
+    // GET /api/mcp/all-messages?after=1698518400000&per_channel_limit=50
+    // Scans ALL channels and returns messages since the given timestamp
+    if (req.method === "GET") {
+      const afterParam = url.searchParams.get("after");
+      const perChannelLimit = parseInt(
+        url.searchParams.get("per_channel_limit") || "50",
+        10
+      );
+
+      if (!afterParam) {
+        return ClientResponse.json(
+          { error: "Missing 'after' parameter (timestamp in milliseconds)" },
+          { status: 400 }
+        );
+      }
+
+      const afterTimestamp = parseInt(afterParam, 10);
+      if (isNaN(afterTimestamp)) {
+        return ClientResponse.json(
+          {
+            error:
+              "'after' parameter must be a valid timestamp in milliseconds",
+          },
+          { status: 400 }
+        );
+      }
+
+      const allChannels = getAllChannels();
+      const results: Array<{
+        channel: string | null;
+        fullName: string | null;
+        category: string | null;
+        type: string;
+        messages?: ReturnType<typeof formatMessage>[];
+        posts?: any[];
+        count: number;
+      }> = [];
+
+      // Process all channels concurrently
+      const promises = allChannels.map(async (channel) => {
+        try {
+          if (channel.type === "forum") {
+            const posts = await getForumPostsData(
+              channel.id,
+              Math.min(perChannelLimit, 100)
+            );
+            const filteredPosts = posts.filter(
+              (post: any) => post.createdAt > afterTimestamp
+            );
+            if (filteredPosts.length > 0) {
+              return {
+                channel: channel.name,
+                fullName: channel.fullName,
+                category: channel.category,
+                type: channel.type,
+                posts: filteredPosts,
+                count: filteredPosts.length,
+              };
+            }
+          } else {
+            // Text, announcement, and thread channels
+            const messages = await getChannelMessages(
+              channel.id,
+              Math.min(perChannelLimit, 100)
+            );
+            const filteredMessages = [...messages.values()].filter(
+              (msg) => msg.createdTimestamp > afterTimestamp
+            );
+            if (filteredMessages.length > 0) {
+              return {
+                channel: channel.name,
+                fullName: channel.fullName,
+                category: channel.category,
+                type: channel.type,
+                messages: filteredMessages.map(formatMessage),
+                count: filteredMessages.length,
+              };
+            }
+          }
+        } catch {
+          // Silently skip channels we can't access
+        }
+        return null;
+      });
+
+      const settled = await Promise.all(promises);
+      for (const result of settled) {
+        if (result) {
+          results.push(result);
+        }
+      }
+
+      // Sort by total message count descending
+      results.sort((a, b) => b.count - a.count);
+
+      const totalMessages = results.reduce((sum, r) => sum + r.count, 0);
+
+      return ClientResponse.json({
+        after: afterTimestamp,
+        channels_with_activity: results.length,
+        total_messages: totalMessages,
+        channels: results,
+      });
+    }
+    return new ClientResponse("Method not allowed", { status: 405 });
+  }
+
   if (endpoint === "message") {
     // DELETE /api/mcp/message?channel=app-debug&message_id=123456789
     // Deletes a message from a channel
