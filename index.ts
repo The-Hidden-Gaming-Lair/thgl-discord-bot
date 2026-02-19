@@ -4,10 +4,12 @@ import { handleInfo } from "./routes/info/route";
 import { handleSuggestionsIssues } from "./routes/suggestions-issues/route";
 import { handleUpdates } from "./routes/updates/route";
 import { handleMcpApi } from "./routes/mcp-api/route";
+import { setupSpamGuard } from "./lib/spam-guard";
 
 await initDiscord();
 const client = getClient();
 console.log(`Ready! Logged in as ${client.user.tag}`);
+setupSpamGuard(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
