@@ -102,6 +102,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 "Timestamp in milliseconds - only return messages after this time",
             },
+            include_images: {
+              type: "boolean",
+              description:
+                "Fetch and return image attachments as viewable content (default: false). Adds latency.",
+            },
           },
           required: ["channel"],
         },
@@ -127,6 +132,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "Maximum number of messages to search through (default: 50)",
               minimum: 1,
               maximum: 100,
+            },
+            include_images: {
+              type: "boolean",
+              description:
+                "Fetch and return image attachments as viewable content (default: false). Adds latency.",
             },
           },
           required: ["channel", "query"],
@@ -154,6 +164,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "Maximum number of messages to check (default: 50)",
               minimum: 1,
               maximum: 100,
+            },
+            include_images: {
+              type: "boolean",
+              description:
+                "Fetch and return image attachments as viewable content (default: false). Adds latency.",
             },
           },
           required: ["channel"],
@@ -254,55 +269,82 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const channel = args?.channel as string;
         const limit = (args?.limit as number) || 10;
         const after = args?.after as number | undefined;
+        const includeImages = args?.include_images as boolean;
 
         const params: Record<string, string | number> = { channel, limit };
         if (after !== undefined) params.after = after;
+        if (includeImages) params.include_images = "true";
 
         const result = await apiRequest("/messages", { params });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ];
+        if (includeImages && result.messages) {
+          for (const msg of result.messages) {
+            if (msg.imageData) {
+              for (const img of msg.imageData) {
+                content.push({ type: "image", data: img.data, mimeType: img.mimeType });
+              }
+            }
+          }
+        }
+
+        return { content };
       }
 
       case "search_messages": {
         const channel = args?.channel as string;
         const query = args?.query as string;
         const limit = (args?.limit as number) || 50;
+        const includeImages = args?.include_images as boolean;
 
-        const result = await apiRequest("/search", {
-          params: { channel, query, limit },
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        const params: Record<string, string | number> = { channel, query, limit };
+        if (includeImages) params.include_images = "true";
+
+        const result = await apiRequest("/search", { params });
+
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ];
+        if (includeImages && result.messages) {
+          for (const msg of result.messages) {
+            if (msg.imageData) {
+              for (const img of msg.imageData) {
+                content.push({ type: "image", data: img.data, mimeType: img.mimeType });
+              }
+            }
+          }
+        }
+
+        return { content };
       }
 
       case "get_messages_with_reactions": {
         const channel = args?.channel as string;
         const min_reactions = (args?.min_reactions as number) || 5;
         const limit = (args?.limit as number) || 50;
+        const includeImages = args?.include_images as boolean;
 
-        const result = await apiRequest("/reactions", {
-          params: { channel, min_reactions, limit },
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
-        };
+        const params: Record<string, string | number> = { channel, min_reactions, limit };
+        if (includeImages) params.include_images = "true";
+
+        const result = await apiRequest("/reactions", { params });
+
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ];
+        if (includeImages && result.messages) {
+          for (const msg of result.messages) {
+            if (msg.imageData) {
+              for (const img of msg.imageData) {
+                content.push({ type: "image", data: img.data, mimeType: img.mimeType });
+              }
+            }
+          }
+        }
+
+        return { content };
       }
 
       case "get_forum_posts": {

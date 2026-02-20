@@ -49,8 +49,34 @@ function checkAuth(req: Request): boolean {
   return providedKey === expectedKey;
 }
 
+// Fetch an image from a URL and return as base64
+async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    const data = Buffer.from(buffer).toString("base64");
+    const mimeType = response.headers.get("content-type") || "image/png";
+    return { data, mimeType };
+  } catch {
+    return null;
+  }
+}
+
 // Format Discord message for API response
-function formatMessage(message: Message) {
+async function formatMessage(message: Message, includeImages = false) {
+  const imageAttachments = message.attachments.filter(
+    (att) => att.contentType?.startsWith("image/")
+  );
+
+  let imageData: Array<{ data: string; mimeType: string }> | undefined;
+  if (includeImages && imageAttachments.size > 0) {
+    const results = await Promise.all(
+      imageAttachments.map((att) => fetchImageAsBase64(att.url))
+    );
+    imageData = results.filter((r) => r !== null);
+  }
+
   return {
     id: message.id,
     author: {
@@ -99,6 +125,7 @@ function formatMessage(message: Message) {
       emoji: reaction.emoji.name,
       count: reaction.count,
     })),
+    ...(imageData && imageData.length > 0 ? { imageData } : {}),
   };
 }
 
@@ -135,13 +162,15 @@ export async function handleMcpApi(req: Request, url: URL) {
   const endpoint = pathParts[2]; // 'messages', 'search', 'reactions', or 'forum'
 
   if (endpoint === "messages") {
-    // GET /api/mcp/messages?channel=announcements&limit=10&after=1698518400000
+    // GET /api/mcp/messages?channel=announcements&limit=10&after=1698518400000&include_images=true
     // channel can be: ID, name, or "category/name"
     // after: optional timestamp in milliseconds - only return messages after this time
+    // include_images: fetch image attachments as base64 (default: false)
     if (req.method === "GET") {
       const channelIdentifier = url.searchParams.get("channel");
       const limit = parseInt(url.searchParams.get("limit") || "10", 10);
       const afterParam = url.searchParams.get("after");
+      const includeImages = url.searchParams.get("include_images") === "true";
 
       if (!channelIdentifier) {
         return ClientResponse.json(
@@ -179,7 +208,9 @@ export async function handleMcpApi(req: Request, url: URL) {
           filteredMessages = messages.filter((msg) => msg.createdTimestamp > afterTimestamp);
         }
 
-        const formattedMessages = filteredMessages.map(formatMessage);
+        const formattedMessages = await Promise.all(
+          filteredMessages.map((msg) => formatMessage(msg, includeImages))
+        );
 
         return ClientResponse.json({
           channel: channel.name,
@@ -200,11 +231,12 @@ export async function handleMcpApi(req: Request, url: URL) {
   }
 
   if (endpoint === "search") {
-    // GET /api/mcp/search?channel=announcements&query=update&limit=50
+    // GET /api/mcp/search?channel=announcements&query=update&limit=50&include_images=true
     if (req.method === "GET") {
       const channelIdentifier = url.searchParams.get("channel");
       const query = url.searchParams.get("query");
       const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+      const includeImages = url.searchParams.get("include_images") === "true";
 
       if (!channelIdentifier || !query) {
         return ClientResponse.json(
@@ -229,22 +261,23 @@ export async function handleMcpApi(req: Request, url: URL) {
           Math.min(limit, 100)
         );
         const lowerQuery = query.toLowerCase();
-        const matchingMessages = messages
-          .filter((msg) => {
-            // Search in message content
-            if (msg.cleanContent.toLowerCase().includes(lowerQuery)) return true;
-            // Search in embed titles, descriptions, and field values
-            for (const embed of msg.embeds) {
-              if (embed.title?.toLowerCase().includes(lowerQuery)) return true;
-              if (embed.description?.toLowerCase().includes(lowerQuery)) return true;
-              for (const field of embed.fields) {
-                if (field.name.toLowerCase().includes(lowerQuery)) return true;
-                if (field.value.toLowerCase().includes(lowerQuery)) return true;
-              }
+        const filtered = messages.filter((msg) => {
+          // Search in message content
+          if (msg.cleanContent.toLowerCase().includes(lowerQuery)) return true;
+          // Search in embed titles, descriptions, and field values
+          for (const embed of msg.embeds) {
+            if (embed.title?.toLowerCase().includes(lowerQuery)) return true;
+            if (embed.description?.toLowerCase().includes(lowerQuery)) return true;
+            for (const field of embed.fields) {
+              if (field.name.toLowerCase().includes(lowerQuery)) return true;
+              if (field.value.toLowerCase().includes(lowerQuery)) return true;
             }
-            return false;
-          })
-          .map(formatMessage);
+          }
+          return false;
+        });
+        const matchingMessages = await Promise.all(
+          filtered.map((msg) => formatMessage(msg, includeImages))
+        );
 
         return ClientResponse.json({
           channel: channel.name,
@@ -265,7 +298,7 @@ export async function handleMcpApi(req: Request, url: URL) {
   }
 
   if (endpoint === "reactions") {
-    // GET /api/mcp/reactions?channel=announcements&min_reactions=5&limit=50
+    // GET /api/mcp/reactions?channel=announcements&min_reactions=5&limit=50&include_images=true
     if (req.method === "GET") {
       const channelIdentifier = url.searchParams.get("channel");
       const minReactions = parseInt(
@@ -273,6 +306,7 @@ export async function handleMcpApi(req: Request, url: URL) {
         10
       );
       const limit = parseInt(url.searchParams.get("limit") || "50", 10);
+      const includeImages = url.searchParams.get("include_images") === "true";
 
       if (!channelIdentifier) {
         return ClientResponse.json(
@@ -296,15 +330,16 @@ export async function handleMcpApi(req: Request, url: URL) {
           channel.id,
           Math.min(limit, 100)
         );
-        const messagesWithReactions = messages
-          .filter((msg) => {
-            const totalReactions = msg.reactions.cache.reduce(
-              (sum, reaction) => sum + reaction.count,
-              0
-            );
-            return totalReactions >= minReactions;
-          })
-          .map(formatMessage);
+        const filtered = messages.filter((msg) => {
+          const totalReactions = msg.reactions.cache.reduce(
+            (sum, reaction) => sum + reaction.count,
+            0
+          );
+          return totalReactions >= minReactions;
+        });
+        const messagesWithReactions = await Promise.all(
+          filtered.map((msg) => formatMessage(msg, includeImages))
+        );
 
         return ClientResponse.json({
           channel: channel.name,
@@ -428,7 +463,7 @@ export async function handleMcpApi(req: Request, url: URL) {
         fullName: string | null;
         category: string | null;
         type: string;
-        messages?: ReturnType<typeof formatMessage>[];
+        messages?: Awaited<ReturnType<typeof formatMessage>>[];
         posts?: any[];
         count: number;
       }> = [];
@@ -469,7 +504,7 @@ export async function handleMcpApi(req: Request, url: URL) {
                 fullName: channel.fullName,
                 category: channel.category,
                 type: channel.type,
-                messages: filteredMessages.map(formatMessage),
+                messages: await Promise.all(filteredMessages.map((msg) => formatMessage(msg))),
                 count: filteredMessages.length,
               };
             }
