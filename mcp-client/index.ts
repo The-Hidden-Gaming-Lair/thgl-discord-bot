@@ -277,18 +277,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("/messages", { params });
 
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-          { type: "text", text: JSON.stringify(result, null, 2) },
-        ];
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
         if (includeImages && result.messages) {
           for (const msg of result.messages) {
             if (msg.imageData) {
               for (const img of msg.imageData) {
                 content.push({ type: "image", data: img.data, mimeType: img.mimeType });
               }
+              delete msg.imageData;
             }
           }
         }
+        content.unshift({ type: "text", text: JSON.stringify(result, null, 2) });
 
         return { content };
       }
@@ -304,18 +304,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("/search", { params });
 
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-          { type: "text", text: JSON.stringify(result, null, 2) },
-        ];
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
         if (includeImages && result.messages) {
           for (const msg of result.messages) {
             if (msg.imageData) {
               for (const img of msg.imageData) {
                 content.push({ type: "image", data: img.data, mimeType: img.mimeType });
               }
+              delete msg.imageData;
             }
           }
         }
+        content.unshift({ type: "text", text: JSON.stringify(result, null, 2) });
 
         return { content };
       }
@@ -331,18 +331,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const result = await apiRequest("/reactions", { params });
 
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-          { type: "text", text: JSON.stringify(result, null, 2) },
-        ];
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
         if (includeImages && result.messages) {
           for (const msg of result.messages) {
             if (msg.imageData) {
               for (const img of msg.imageData) {
                 content.push({ type: "image", data: img.data, mimeType: img.mimeType });
               }
+              delete msg.imageData;
             }
           }
         }
+        content.unshift({ type: "text", text: JSON.stringify(result, null, 2) });
 
         return { content };
       }
