@@ -52,6 +52,40 @@ async function apiRequest(
   return response.json();
 }
 
+// Fetch an image from a URL and return as base64
+async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    const data = Buffer.from(buffer).toString("base64");
+    const mimeType = response.headers.get("content-type") || "image/png";
+    return { data, mimeType };
+  } catch {
+    return null;
+  }
+}
+
+// Extract image attachment URLs from messages and fetch them as base64
+async function fetchMessageImages(messages: any[]): Promise<Array<{ type: string; data: string; mimeType: string }>> {
+  const imageUrls: string[] = [];
+  for (const msg of messages) {
+    if (msg.attachments) {
+      for (const att of msg.attachments) {
+        if (att.contentType?.startsWith("image/")) {
+          imageUrls.push(att.url);
+        }
+      }
+    }
+  }
+  if (imageUrls.length === 0) return [];
+
+  const results = await Promise.all(imageUrls.map(fetchImageAsBase64));
+  return results
+    .filter((r) => r !== null)
+    .map((r) => ({ type: "image", data: r.data, mimeType: r.mimeType }));
+}
+
 // Create MCP server
 const server = new Server(
   {
@@ -273,22 +307,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const params: Record<string, string | number> = { channel, limit };
         if (after !== undefined) params.after = after;
-        if (includeImages) params.include_images = "true";
 
         const result = await apiRequest("/messages", { params });
 
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ];
         if (includeImages && result.messages) {
-          for (const msg of result.messages) {
-            if (msg.imageData) {
-              for (const img of msg.imageData) {
-                content.push({ type: "image", data: img.data, mimeType: img.mimeType });
-              }
-              delete msg.imageData;
-            }
-          }
+          const images = await fetchMessageImages(result.messages);
+          content.push(...images);
         }
-        content.unshift({ type: "text", text: JSON.stringify(result, null, 2) });
 
         return { content };
       }
@@ -299,23 +327,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const limit = (args?.limit as number) || 50;
         const includeImages = args?.include_images as boolean;
 
-        const params: Record<string, string | number> = { channel, query, limit };
-        if (includeImages) params.include_images = "true";
+        const result = await apiRequest("/search", {
+          params: { channel, query, limit },
+        });
 
-        const result = await apiRequest("/search", { params });
-
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ];
         if (includeImages && result.messages) {
-          for (const msg of result.messages) {
-            if (msg.imageData) {
-              for (const img of msg.imageData) {
-                content.push({ type: "image", data: img.data, mimeType: img.mimeType });
-              }
-              delete msg.imageData;
-            }
-          }
+          const images = await fetchMessageImages(result.messages);
+          content.push(...images);
         }
-        content.unshift({ type: "text", text: JSON.stringify(result, null, 2) });
 
         return { content };
       }
@@ -326,23 +348,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const limit = (args?.limit as number) || 50;
         const includeImages = args?.include_images as boolean;
 
-        const params: Record<string, string | number> = { channel, min_reactions, limit };
-        if (includeImages) params.include_images = "true";
+        const result = await apiRequest("/reactions", {
+          params: { channel, min_reactions, limit },
+        });
 
-        const result = await apiRequest("/reactions", { params });
-
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
+        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
+          { type: "text", text: JSON.stringify(result, null, 2) },
+        ];
         if (includeImages && result.messages) {
-          for (const msg of result.messages) {
-            if (msg.imageData) {
-              for (const img of msg.imageData) {
-                content.push({ type: "image", data: img.data, mimeType: img.mimeType });
-              }
-              delete msg.imageData;
-            }
-          }
+          const images = await fetchMessageImages(result.messages);
+          content.push(...images);
         }
-        content.unshift({ type: "text", text: JSON.stringify(result, null, 2) });
 
         return { content };
       }
