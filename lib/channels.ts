@@ -130,6 +130,10 @@ export const UPDATES_CHANNELS: {
     name: "rsdragonwilds",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "starsand-island",
+    id: "1479429585966727208",
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {

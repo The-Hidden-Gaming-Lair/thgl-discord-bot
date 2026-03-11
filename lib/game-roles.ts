@@ -199,6 +199,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1362543092267352084"],
     titleKeywords: ["runescape: dragonwilds", "dragonwilds", "dragon wilds"],
   },
+  {
+    name: "starsand-island",
+    channelId: "1479429585966727208",
+    roleIds: ["1479422968516841483"],
+    titleKeywords: ["starsand island"],
+  },
 ];
 
 /**
