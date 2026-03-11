@@ -201,7 +201,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   },
   {
     name: "starsand-island",
-    channelId: "1479429585966727208",
+    channelId: "", // No dedicated updates channel - uses central channel only
     roleIds: ["1479422968516841483"],
     titleKeywords: ["starsand island"],
   },

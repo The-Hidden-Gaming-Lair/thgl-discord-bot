@@ -66,24 +66,25 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
   }
 }
 
-// Extract image attachment URLs from messages and fetch them as base64
-async function fetchMessageImages(messages: any[]): Promise<Array<{ type: string; data: string; mimeType: string }>> {
-  const imageUrls: string[] = [];
-  for (const msg of messages) {
-    if (msg.attachments) {
-      for (const att of msg.attachments) {
-        if (att.contentType?.startsWith("image/")) {
-          imageUrls.push(att.url);
-        }
-      }
-    }
-  }
-  if (imageUrls.length === 0) return [];
+// Fetch images for a single message from its attachment URLs
+async function fetchImagesForMessage(message: any): Promise<Array<{ type: string; text?: string; data?: string; mimeType?: string }>> {
+  const imageAttachments = (message.attachments || []).filter(
+    (att: any) => att.contentType?.startsWith("image/"),
+  );
+  if (imageAttachments.length === 0) return [];
 
-  const results = await Promise.all(imageUrls.map(fetchImageAsBase64));
-  return results
-    .filter((r) => r !== null)
-    .map((r) => ({ type: "image", data: r.data, mimeType: r.mimeType }));
+  const results = await Promise.all(
+    imageAttachments.map((att: any) => fetchImageAsBase64(att.url)),
+  );
+
+  const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (!r) continue;
+    content.push({ type: "text", text: `[${imageAttachments[i].name || `Image ${i + 1}`}]` });
+    content.push({ type: "image", data: r.data, mimeType: r.mimeType });
+  }
+  return content;
 }
 
 // Create MCP server
@@ -136,11 +137,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description:
                 "Timestamp in milliseconds - only return messages after this time",
             },
-            include_images: {
-              type: "boolean",
-              description:
-                "Fetch and return image attachments as viewable content (default: false). Adds latency.",
-            },
           },
           required: ["channel"],
         },
@@ -166,11 +162,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "Maximum number of messages to search through (default: 50)",
               minimum: 1,
               maximum: 100,
-            },
-            include_images: {
-              type: "boolean",
-              description:
-                "Fetch and return image attachments as viewable content (default: false). Adds latency.",
             },
           },
           required: ["channel", "query"],
@@ -199,13 +190,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               minimum: 1,
               maximum: 100,
             },
-            include_images: {
-              type: "boolean",
-              description:
-                "Fetch and return image attachments as viewable content (default: false). Adds latency.",
-            },
           },
           required: ["channel"],
+        },
+      },
+      {
+        name: "get_message_images",
+        description:
+          "Fetch and return image attachments from a specific Discord message. Use after reading messages to view screenshots from a particular message. Returns images as viewable content.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            channel: {
+              type: "string",
+              description: "Channel identifier: name, ID, or 'category/name'",
+            },
+            message_id: {
+              type: "string",
+              description:
+                "The message ID to fetch images from (from a previous get_recent_messages or search_messages call)",
+            },
+          },
+          required: ["channel", "message_id"],
         },
       },
       {
@@ -303,64 +309,84 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const channel = args?.channel as string;
         const limit = (args?.limit as number) || 10;
         const after = args?.after as number | undefined;
-        const includeImages = args?.include_images as boolean;
 
         const params: Record<string, string | number> = { channel, limit };
         if (after !== undefined) params.after = after;
 
         const result = await apiRequest("/messages", { params });
-
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-          { type: "text", text: JSON.stringify(result, null, 2) },
-        ];
-        if (includeImages && result.messages) {
-          const images = await fetchMessageImages(result.messages);
-          content.push(...images);
-        }
-
-        return { content };
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(result, null, 2) },
+          ],
+        };
       }
 
       case "search_messages": {
         const channel = args?.channel as string;
         const query = args?.query as string;
         const limit = (args?.limit as number) || 50;
-        const includeImages = args?.include_images as boolean;
 
         const result = await apiRequest("/search", {
           params: { channel, query, limit },
         });
-
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-          { type: "text", text: JSON.stringify(result, null, 2) },
-        ];
-        if (includeImages && result.messages) {
-          const images = await fetchMessageImages(result.messages);
-          content.push(...images);
-        }
-
-        return { content };
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(result, null, 2) },
+          ],
+        };
       }
 
       case "get_messages_with_reactions": {
         const channel = args?.channel as string;
         const min_reactions = (args?.min_reactions as number) || 5;
         const limit = (args?.limit as number) || 50;
-        const includeImages = args?.include_images as boolean;
 
         const result = await apiRequest("/reactions", {
           params: { channel, min_reactions, limit },
         });
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(result, null, 2) },
+          ],
+        };
+      }
 
-        const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [
-          { type: "text", text: JSON.stringify(result, null, 2) },
-        ];
-        if (includeImages && result.messages) {
-          const images = await fetchMessageImages(result.messages);
-          content.push(...images);
+      case "get_message_images": {
+        const channel = args?.channel as string;
+        const message_id = args?.message_id as string;
+
+        // Fetch the message (limit=1 around the target message)
+        const result = await apiRequest("/messages", {
+          params: { channel, limit: 50 },
+        });
+
+        const message = result.messages?.find(
+          (msg: any) => msg.id === message_id,
+        );
+        if (!message) {
+          return {
+            content: [
+              { type: "text", text: `Message ${message_id} not found in recent messages of this channel.` },
+            ],
+            isError: true,
+          };
         }
 
-        return { content };
+        const images = await fetchImagesForMessage(message);
+        if (images.length === 0) {
+          return {
+            content: [
+              { type: "text", text: `Message ${message_id} has no image attachments.` },
+            ],
+          };
+        }
+
+        return {
+          content: [
+            { type: "text", text: `Images from message ${message_id} by ${message.author?.displayName || message.author?.username}:` },
+            ...images,
+          ],
+        };
       }
 
       case "get_forum_posts": {

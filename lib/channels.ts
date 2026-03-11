@@ -132,7 +132,7 @@ export const UPDATES_CHANNELS: {
   },
   {
     name: "starsand-island",
-    id: "1479429585966727208",
+    id: "", // No dedicated updates channel - uses central channel only
   },
 ];
 
