@@ -36,6 +36,7 @@ interface TrackedMessage {
   guildId: string;
   timestamp: number;
   imageCount: number;
+  content: string;
 }
 
 // --- State ---
@@ -60,12 +61,15 @@ function trackMessage(message: Message) {
     a.contentType?.startsWith("image/")
   ).size;
 
+  const content = message.content || message.embeds.map((e) => e.title || e.description || "").filter(Boolean).join(" | ") || "[no text content]";
+
   const entry: TrackedMessage = {
     channelId: message.channelId,
     messageId: message.id,
     guildId: message.guildId!,
     timestamp: Date.now(),
     imageCount,
+    content,
   };
 
   const existing = userMessages.get(message.author.id) ?? [];
@@ -134,9 +138,9 @@ async function handleDetection(
   detail: string,
   entries: TrackedMessage[]
 ) {
-  const channelLinks = entries.map(
+  const messageDetails = entries.map(
     (e) =>
-      `<#${e.channelId}> - [message](https://discord.com/channels/${e.guildId}/${e.channelId}/${e.messageId})`
+      `<#${e.channelId}>: ${e.content.substring(0, 200)}${e.content.length > 200 ? "..." : ""}${e.imageCount > 0 ? ` [${e.imageCount} image(s)]` : ""}`
   );
 
   const embed = new EmbedBuilder()
@@ -148,7 +152,7 @@ async function handleDetection(
       { name: "Detail", value: detail },
       {
         name: "Messages",
-        value: channelLinks.slice(0, 10).join("\n") || "None",
+        value: messageDetails.slice(0, 10).join("\n\n").substring(0, 1024) || "None",
       },
       { name: "Mode", value: SPAM_GUARD_MODE === "act" ? "Acting" : "Log only" }
     )
