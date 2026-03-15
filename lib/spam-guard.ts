@@ -8,7 +8,7 @@ import {
 
 // --- Configuration ---
 
-const SPAM_GUARD_MODE: "log" | "act" = "log";
+const SPAM_GUARD_MODE: "log" | "act" = "act";
 const MOD_LOG_CHANNEL_ID = process.env.MOD_LOG_CHANNEL_ID;
 
 const SAFE_ROLE_IDS = process.env.SAFE_ROLE_IDS
