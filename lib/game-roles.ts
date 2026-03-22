@@ -205,6 +205,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1479422968516841483"],
     titleKeywords: ["starsand island"],
   },
+  {
+    name: "crimson-desert",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1485386601700921524"],
+    titleKeywords: ["crimson desert"],
+  },
 ];
 
 /**

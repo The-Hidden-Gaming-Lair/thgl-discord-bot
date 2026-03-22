@@ -134,6 +134,10 @@ export const UPDATES_CHANNELS: {
     name: "starsand-island",
     id: "", // No dedicated updates channel - uses central channel only
   },
+  {
+    name: "crimson-desert",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
