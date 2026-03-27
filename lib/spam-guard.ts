@@ -11,9 +11,14 @@ import {
 const SPAM_GUARD_MODE: "log" | "act" = "act";
 const MOD_LOG_CHANNEL_ID = process.env.MOD_LOG_CHANNEL_ID;
 
-const SAFE_ROLE_IDS = process.env.SAFE_ROLE_IDS
-  ? process.env.SAFE_ROLE_IDS.split(",").map((id) => id.trim())
-  : [];
+const STAFF_ROLE_ID = "1173945621963604069";
+
+const SAFE_ROLE_IDS = [
+  STAFF_ROLE_ID,
+  ...(process.env.SAFE_ROLE_IDS
+    ? process.env.SAFE_ROLE_IDS.split(",").map((id) => id.trim())
+    : []),
+];
 
 // Rule 1: Cross-channel image spam
 const RULE1_IMAGE_THRESHOLD = 3;
