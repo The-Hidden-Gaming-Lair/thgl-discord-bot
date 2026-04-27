@@ -211,6 +211,18 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1485386601700921524"],
     titleKeywords: ["crimson desert"],
   },
+  {
+    name: "soulmask",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1498053455686668361"],
+    titleKeywords: ["soulmask"],
+  },
+  {
+    name: "homm-olden-era",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1498053717046333570"],
+    titleKeywords: ["homm: olden era", "homm olden era", "heroes of might and magic: olden era"],
+  },
 ];
 
 /**

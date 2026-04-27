@@ -260,6 +260,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               minimum: 1,
               maximum: 100,
             },
+            skip_bots: {
+              type: "boolean",
+              description:
+                "Skip messages from bot accounts (default: true). Set to false to include bot messages.",
+            },
+            compact: {
+              type: "boolean",
+              description:
+                "Return compact format: strips embed fields/thumbnails/images, shortens attachment info (default: true). Set to false for full data.",
+            },
           },
           required: ["after"],
         },
@@ -413,12 +423,95 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const per_channel_limit = args?.per_channel_limit as
           | number
           | undefined;
+        const skipBots = args?.skip_bots !== false; // default: true
+        const compact = args?.compact !== false; // default: true
 
         const params: Record<string, string | number> = { after };
         if (per_channel_limit !== undefined)
           params.per_channel_limit = per_channel_limit;
 
         const result = await apiRequest("/all-messages", { params });
+
+        // Channels to skip entirely (noise for checkins)
+        const IGNORED_CHANNELS = ["welcome", "automod"];
+
+        // Post-process: filter channels, bots, and compact the response
+        if (result.channels) {
+          result.channels = result.channels.filter(
+            (ch: any) => !IGNORED_CHANNELS.some((ignored) =>
+              ch.channel?.toLowerCase().includes(ignored)
+            )
+          );
+
+          for (const channel of result.channels) {
+            if (channel.messages) {
+              // Filter out bot messages
+              if (skipBots) {
+                channel.messages = channel.messages.filter(
+                  (msg: any) => !msg.author?.bot
+                );
+              }
+
+              // Compact format: reduce embed and attachment verbosity
+              if (compact) {
+                for (const msg of channel.messages) {
+                  // Slim down embeds: keep only title + description
+                  if (msg.embeds?.length) {
+                    msg.embeds = msg.embeds.map((e: any) => ({
+                      ...(e.title && { title: e.title }),
+                      ...(e.description && { description: e.description }),
+                    }));
+                    // Remove empty embeds
+                    msg.embeds = msg.embeds.filter(
+                      (e: any) => e.title || e.description
+                    );
+                    if (msg.embeds.length === 0) delete msg.embeds;
+                  }
+
+                  // Slim down attachments: keep only name and type
+                  if (msg.attachments?.length) {
+                    msg.attachments = msg.attachments.map((a: any) => ({
+                      name: a.name,
+                      type: a.contentType,
+                    }));
+                  } else {
+                    delete msg.attachments;
+                  }
+
+                  // Remove empty reactions
+                  if (msg.reactions && msg.reactions.length === 0) {
+                    delete msg.reactions;
+                  }
+                }
+              }
+
+              // Update count after filtering
+              channel.count = channel.messages.length;
+            }
+
+            // Compact forum posts too
+            if (channel.posts && compact) {
+              for (const post of channel.posts) {
+                if (post.content?.embeds?.length) {
+                  post.content.embeds = post.content.embeds.map((e: any) => ({
+                    ...(e.title && { title: e.title }),
+                    ...(e.description && { description: e.description }),
+                  }));
+                }
+              }
+            }
+          }
+
+          // Remove channels with no messages after filtering
+          result.channels = result.channels.filter(
+            (ch: any) => (ch.count || ch.messages?.length || ch.posts?.length) > 0
+          );
+          result.channels_with_activity = result.channels.length;
+          result.total_messages = result.channels.reduce(
+            (sum: number, ch: any) => sum + (ch.count || 0), 0
+          );
+        }
+
         return {
           content: [
             {

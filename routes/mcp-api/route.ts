@@ -160,6 +160,39 @@ export async function handleMcpApi(req: Request, url: URL) {
         );
       }
 
+      // Forum channels need to use the forum endpoint logic
+      if (channel.type === "forum") {
+        try {
+          const posts = await getForumPostsData(channel.id, Math.min(limit, 100));
+
+          let filteredPosts = posts;
+          if (afterParam) {
+            const afterTimestamp = parseInt(afterParam, 10);
+            if (isNaN(afterTimestamp)) {
+              return ClientResponse.json(
+                { error: "'after' parameter must be a valid timestamp in milliseconds" },
+                { status: 400 }
+              );
+            }
+            filteredPosts = posts.filter((post: any) => post.createdAt > afterTimestamp);
+          }
+
+          return ClientResponse.json({
+            channel: channel.name,
+            fullName: channel.fullName,
+            category: channel.category,
+            type: channel.type,
+            count: filteredPosts.length,
+            posts: filteredPosts,
+          });
+        } catch (error) {
+          return ClientResponse.json(
+            { error: error instanceof Error ? error.message : "Unknown error" },
+            { status: 500 }
+          );
+        }
+      }
+
       try {
         const messages = await getChannelMessages(
           channel.id,

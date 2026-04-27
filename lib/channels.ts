@@ -138,6 +138,14 @@ export const UPDATES_CHANNELS: {
     name: "crimson-desert",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "soulmask",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "homm-olden-era",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
