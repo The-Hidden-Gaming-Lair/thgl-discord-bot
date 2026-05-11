@@ -223,6 +223,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1498053717046333570"],
     titleKeywords: ["homm: olden era", "homm olden era", "heroes of might and magic: olden era"],
   },
+  {
+    name: "conan-exiles",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1502369547980636180"],
+    titleKeywords: ["conan exiles enhanced", "conan exiles", "conan"],
+  },
 ];
 
 /**
