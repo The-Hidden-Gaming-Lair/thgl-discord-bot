@@ -1,20 +1,28 @@
-import { syncFaq } from "../../lib/faq";
+import { startFaqSync, getFaqSyncStatus } from "../../lib/faq";
 import { ClientResponse } from "../../lib/http";
 
 /**
  * FAQ sync endpoint — mirrors the web FAQ into the Discord FAQ forum.
  *
- *   POST /api/faq/sync            create/update synced threads; list (but do
- *                                 NOT perform) deletions as a dry run
+ *   GET  /api/faq/sync            status of the last/current run (report included)
+ *   POST /api/faq/sync            start a run in the background (dry-run deletions)
  *   POST /api/faq/sync?apply=true also delete legacy/orphaned threads
  *
- * If FAQ_SYNC_SECRET is set, requests must pass it via the
+ * The sync runs in the background and is reported via GET, because it makes
+ * many sequential Discord writes that exceed the HTTP request timeout.
+ *
+ * If FAQ_SYNC_SECRET is set, POST requests must pass it via the
  * `x-sync-secret` header or `?secret=` query param.
  */
 export async function handleFaq(req: Request, url: URL) {
   if (req.method === "OPTIONS") {
     return new ClientResponse("", { status: 204 });
   }
+
+  if (req.method === "GET") {
+    return ClientResponse.json(getFaqSyncStatus());
+  }
+
   if (req.method !== "POST") {
     return new ClientResponse("Method not allowed", { status: 405 });
   }
@@ -29,15 +37,21 @@ export async function handleFaq(req: Request, url: URL) {
   }
 
   const applyDeletes = url.searchParams.get("apply") === "true";
+  const { started, alreadyRunning } = startFaqSync({ applyDeletes });
 
-  try {
-    const report = await syncFaq({ applyDeletes });
-    return ClientResponse.json(report);
-  } catch (error: any) {
-    console.error("FAQ sync failed:", error);
-    return new ClientResponse(
-      `FAQ sync failed: ${error?.message ?? String(error)}`,
-      { status: 500 },
+  if (!started && alreadyRunning) {
+    return ClientResponse.json(
+      { started: false, message: "A sync is already running." },
+      { status: 409 },
     );
   }
+
+  return ClientResponse.json(
+    {
+      started: true,
+      applyDeletes,
+      message: "Sync started. Poll GET /api/faq/sync for the result.",
+    },
+    { status: 202 },
+  );
 }

@@ -1,4 +1,4 @@
-import { syncFaq } from "./faq";
+import { startFaqSync } from "./faq";
 
 /**
  * Periodic FAQ sync.
@@ -18,37 +18,11 @@ const DEFAULT_INTERVAL_MS = 30 * 60 * 1000;
 // Small delay after startup so the client cache is warm before the first run.
 const STARTUP_DELAY_MS = 15 * 1000;
 
-let running = false;
-
-async function runOnce() {
-  if (running) return; // never overlap runs
-  running = true;
-  try {
-    const applyDeletes = process.env.FAQ_SYNC_APPLY_DELETES === "true";
-    const report = await syncFaq({ applyDeletes });
-    console.log(
-      `[faq-sync] ${report.created} created, ${report.updated} updated, ` +
-        `${report.skipped} unchanged, ${report.deleted} deleted, ` +
-        `${report.pendingDeletions} pending deletion, ${report.errors} errors`,
-    );
-    if (report.pendingDeletions > 0) {
-      console.log(
-        "[faq-sync] pending deletions (run POST /api/faq/sync?apply=true to remove): " +
-          report.actions
-            .filter((a) => a.action === "delete" && !a.applied)
-            .map((a) =>
-              a.action === "delete"
-                ? `${a.title}${a.hasWebEquivalent ? "" : " [NO WEB EQUIVALENT]"}`
-                : "",
-            )
-            .join("; "),
-      );
-    }
-  } catch (error: any) {
-    console.error("[faq-sync] run failed:", error?.message ?? error);
-  } finally {
-    running = false;
-  }
+function runOnce() {
+  // startFaqSync is non-blocking and no-ops if a run is already in flight
+  // (e.g. a manual POST). Results are logged by the runner itself.
+  const applyDeletes = process.env.FAQ_SYNC_APPLY_DELETES === "true";
+  startFaqSync({ applyDeletes });
 }
 
 export function startFaqSyncScheduler() {

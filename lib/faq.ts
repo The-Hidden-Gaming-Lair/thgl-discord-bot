@@ -182,18 +182,20 @@ async function loadThreads(channelId: string): Promise<ThreadInfo[]> {
   const client = getClient();
   const botId = client.user?.id;
   const threads = await getForumPosts(channelId); // active + archived
-  const infos: ThreadInfo[] = [];
-  for (const thread of threads) {
-    const starter = await thread.fetchStarterMessage().catch(() => null);
-    const byBot = !!starter && !!botId && starter.author.id === botId;
-    infos.push({
-      thread,
-      byBot,
-      faqId: starter ? parseFaqId(starter.content) : null,
-      title: thread.name,
-    });
-  }
-  return infos;
+  // Fetch starter messages in parallel — sequential fetching of ~30+ threads
+  // is the main cost and easily exceeds the request timeout.
+  return Promise.all(
+    threads.map(async (thread) => {
+      const starter = await thread.fetchStarterMessage().catch(() => null);
+      const byBot = !!starter && !!botId && starter.author.id === botId;
+      return {
+        thread,
+        byBot,
+        faqId: starter ? parseFaqId(starter.content) : null,
+        title: thread.name,
+      } satisfies ThreadInfo;
+    }),
+  );
 }
 
 export async function syncFaq(
@@ -345,4 +347,64 @@ export async function syncFaq(
   }
 
   return report;
+}
+
+// ---------------------------------------------------------------------------
+// Run management
+//
+// The sync makes many sequential Discord writes and can run well past an HTTP
+// request timeout, so callers start it in the background and poll status. A
+// single run-lock prevents overlapping runs (which would create duplicates).
+// ---------------------------------------------------------------------------
+
+let syncRunning = false;
+let lastStartedAt: number | null = null;
+let lastFinishedAt: number | null = null;
+let lastReport: FaqSyncReport | null = null;
+let lastError: string | null = null;
+
+export function getFaqSyncStatus() {
+  return {
+    running: syncRunning,
+    lastStartedAt,
+    lastFinishedAt,
+    lastError,
+    lastReport,
+  };
+}
+
+async function executeSync(options: { applyDeletes?: boolean }) {
+  lastStartedAt = Date.now();
+  try {
+    const report = await syncFaq(options);
+    lastReport = report;
+    lastError = null;
+    console.log(
+      `[faq-sync] ${report.created} created, ${report.updated} updated, ` +
+        `${report.skipped} unchanged, ${report.deleted} deleted, ` +
+        `${report.pendingDeletions} pending, ${report.errors} errors`,
+    );
+  } catch (error: any) {
+    lastError = error?.message ?? String(error);
+    console.error("[faq-sync] run failed:", lastError);
+  } finally {
+    lastFinishedAt = Date.now();
+    syncRunning = false;
+  }
+}
+
+/**
+ * Start a sync in the background. Returns synchronously so HTTP handlers and
+ * the scheduler don't block on the work. No-op if a run is already in flight.
+ */
+export function startFaqSync(options: { applyDeletes?: boolean } = {}): {
+  started: boolean;
+  alreadyRunning: boolean;
+} {
+  if (syncRunning) {
+    return { started: false, alreadyRunning: true };
+  }
+  syncRunning = true;
+  void executeSync(options);
+  return { started: true, alreadyRunning: false };
 }
