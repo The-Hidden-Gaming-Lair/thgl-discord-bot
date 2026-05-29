@@ -115,7 +115,7 @@ export function buildPostBody(entry: FaqEntry, baseUrl: string): string {
   const answer = absolutizeLinks(entry.answer.trim());
 
   // Most answers fit whole; only say "read the full answer" when truncated.
-  const linkFooter = `\n\n🔗 **Web version:** ${url}`;
+  const linkFooter = `\n\n**Web version:** ${url}`;
   const truncFooter = `\n\n📖 **Read the full answer:** ${url}`;
 
   if (answer.length + linkFooter.length <= MAX_MESSAGE_LENGTH) {
