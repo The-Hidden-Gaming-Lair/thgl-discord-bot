@@ -4,12 +4,15 @@ import { handleInfo } from "./routes/info/route";
 import { handleSuggestionsIssues } from "./routes/suggestions-issues/route";
 import { handleUpdates } from "./routes/updates/route";
 import { handleMcpApi } from "./routes/mcp-api/route";
+import { handleFaq } from "./routes/faq/route";
 import { setupSpamGuard } from "./lib/spam-guard";
+import { startFaqSyncScheduler } from "./lib/faq-scheduler";
 
 await initDiscord();
 const client = getClient();
 console.log(`Ready! Logged in as ${client.user.tag}`);
 setupSpamGuard(client);
+startFaqSyncScheduler();
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
@@ -27,6 +30,9 @@ const server = Bun.serve({
     }
     if (url.pathname.startsWith("/api/mcp")) {
       return handleMcpApi(req, url);
+    }
+    if (url.pathname.startsWith("/api/faq")) {
+      return handleFaq(req, url);
     }
     return new ClientResponse("404!", { status: 404 });
   },

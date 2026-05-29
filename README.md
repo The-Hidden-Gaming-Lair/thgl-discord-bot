@@ -31,6 +31,49 @@ This repo is part of a larger ecosystem of tools and services powering The Hidde
 - **Lightweight & Fast**  
   Built with Bun for performance and simplicity.
 
+- **FAQ Sync (web → Discord)**  
+  Mirrors the web FAQ (`faq-entries.ts`, served at `https://www.th.gl/api/faq`)
+  into the Discord FAQ forum, so the FAQ is maintained in one place. See below.
+
+## ❔ FAQ Sync
+
+The web is the single source of truth for the FAQ. The bot reconciles the FAQ
+forum so each web entry has exactly one **bot-authored** thread (bot-authored so
+it can be edited on later runs), with as much of the answer as fits plus a link
+to the canonical page.
+
+**Trigger**
+
+```
+POST /api/faq/sync             # create/update threads; LIST pending deletions (dry run)
+POST /api/faq/sync?apply=true  # also delete legacy/orphaned threads
+```
+
+A scheduler also runs periodically (see env below). Deletions are off by default
+everywhere so the first run can be inspected before anything is removed.
+
+**Environment**
+
+| Variable                 | Default                      | Purpose                                              |
+| ------------------------ | ---------------------------- | ---------------------------------------------------- |
+| `FAQ_API_URL`            | `https://www.th.gl/api/faq`  | Canonical FAQ feed to mirror.                        |
+| `FAQ_SYNC_SECRET`        | _(unset)_                    | If set, required via `x-sync-secret` header or `?secret=`. |
+| `FAQ_SYNC_ENABLED`       | on                           | Set `false` to disable the scheduler.                |
+| `FAQ_SYNC_INTERVAL_MS`   | `1800000` (30 min)           | Scheduler poll interval.                             |
+| `FAQ_SYNC_APPLY_DELETES` | `false`                      | `true` lets the scheduler delete legacy/orphan threads automatically. |
+
+**Discord permissions** the bot role needs in the FAQ forum: *Create Posts*,
+*Send Messages in Threads*, *Manage Threads* (to unarchive on update and delete
+legacy/orphan threads), and *Manage Messages* (to edit starter messages).
+
+**First migration**
+
+1. `POST /api/faq/sync` — creates bot threads and prints the legacy posts it
+   *would* delete (those marked `[NO WEB EQUIVALENT]` have no web page and would
+   be lost — migrate them into `faq-entries.ts` first if you want to keep them).
+2. Once the plan looks right, `POST /api/faq/sync?apply=true` to remove the
+   legacy `devleon`-authored posts.
+
 ## 🤝 Access & Contact
 
 The API is private.  

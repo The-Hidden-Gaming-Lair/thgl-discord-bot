@@ -157,6 +157,14 @@ export const SUGGESTIONS_ISSUES_CHANNEL = {
   id: "1021543411293106217",
 };
 
+// Forum channel mirrored from the web FAQ (faq-entries.ts on www.th.gl).
+// Threads here are created/updated/removed by the web→Discord FAQ sync
+// (lib/faq.ts). The web is the single source of truth.
+export const FAQ_CHANNEL = {
+  name: "faq",
+  id: "1038352744341311528",
+};
+
 export const INFO_CHANNELS: {
   name: string;
   id: string;

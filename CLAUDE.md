@@ -39,7 +39,16 @@ This Discord bot exposes API endpoints for THGL Discord channel content:
   - Optional: `?limit=N` - Limit number of posts returned
   - Note: Posts with deleted starter messages will have empty content
 - `/api/suggestions-issues/{postId}` - Returns single forum post with ALL replies, reactions, and full details
+- `/api/faq/sync` (POST) - Web→Discord FAQ sync. Reconciles the FAQ forum (FAQ_CHANNEL in `lib/channels.ts`) against the canonical web feed. `?apply=true` also deletes legacy/orphaned threads (default dry-run for deletions). Optional `FAQ_SYNC_SECRET` via `x-sync-secret` header or `?secret=`.
 - Root endpoints list available channels with links
+
+**FAQ Sync** (`lib/faq.ts`, `lib/faq-scheduler.ts`):
+
+- The web FAQ (`faq-entries.ts` on www.th.gl, served at `FAQ_API_URL`, default `https://www.th.gl/api/faq`) is the single source of truth.
+- `syncFaq({ applyDeletes })` creates/updates one **bot-authored** thread per web entry (bot must author them to edit on resync), matching existing threads by the canonical `th.gl/faq/{id}` link embedded in the starter message. Long answers are truncated to Discord's 2000-char limit with a link to the full page.
+- FAQ `labels` map to forum tag **names** (`LABEL_TO_TAG_NAME`, fallback `THGL`), resolved to tag IDs at runtime.
+- Deletions (legacy non-bot threads + orphaned bot threads) only happen when `applyDeletes` is true. The scheduler (`startFaqSyncScheduler`) runs additively by default; see README env vars.
+- This is the only **web→Discord** flow; all other routes are Discord→web reads.
 
 **Message Processing** (`lib/messages.ts`):
 
