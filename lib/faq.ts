@@ -161,51 +161,61 @@ function resolveTagIds(
 }
 
 /**
- * Ensure the forum has a tag for every label used by the FAQ, creating the
- * missing ones (requires Manage Channels). Existing tags are preserved.
- * Returns the up-to-date tag list. On failure (e.g. missing permission), logs
- * and returns the current tags so the sync can still proceed.
+ * Reconcile the forum's tag set to exactly the labels used by the web FAQ
+ * (requires Manage Channels). Existing tags with a matching name keep their
+ * id/emoji; missing labels are created; any other tags (e.g. orphaned legacy
+ * game tags) are removed. The FAQ forum is fully bot-managed, so its tag set
+ * mirrors the website. On failure (e.g. missing permission or the 20-tag cap)
+ * it logs and returns the current tags so the sync still proceeds.
  */
-async function ensureForumTags(
+async function reconcileForumTags(
   forum: ForumChannel,
   requiredLabels: string[],
 ): Promise<GuildForumTag[]> {
   const existing = forum.availableTags;
-  const existingNames = new Set(existing.map((t) => t.name.toLowerCase()));
-  const missing = [...new Set(requiredLabels)].filter(
-    (name) => !existingNames.has(name.toLowerCase()),
+  const desired = [...new Set(requiredLabels)].slice(0, MAX_FORUM_TAGS);
+  const existingByName = new Map(
+    existing.map((t) => [t.name.toLowerCase(), t] as const),
   );
-  if (missing.length === 0) return existing;
 
-  const room = MAX_FORUM_TAGS - existing.length;
-  if (room <= 0) {
-    console.warn(
-      `[faq-sync] forum at ${MAX_FORUM_TAGS}-tag limit; cannot add: ${missing.join(", ")}`,
-    );
-    return existing;
-  }
-  const toAdd = missing.slice(0, room);
+  const desiredSet = new Set(desired.map((n) => n.toLowerCase()));
+  const alreadyExact =
+    existing.length === desired.length &&
+    existing.every((t) => desiredSet.has(t.name.toLowerCase()));
+  if (alreadyExact) return existing;
 
   try {
-    const merged = [
-      ...existing.map((t) => ({
-        id: t.id,
-        name: t.name,
-        moderated: t.moderated,
-        emoji: t.emoji?.id || t.emoji?.name ? t.emoji : null,
-      })),
-      ...toAdd.map((name) => ({ name, moderated: false })),
-    ];
+    const target = desired.map((name) => {
+      const ex = existingByName.get(name.toLowerCase());
+      return ex
+        ? {
+            id: ex.id,
+            name: ex.name,
+            moderated: ex.moderated,
+            emoji: ex.emoji?.id || ex.emoji?.name ? ex.emoji : null,
+          }
+        : { name, moderated: false };
+    });
     const updated = await forum.setAvailableTags(
-      merged,
-      "FAQ sync: add web label tags",
+      target,
+      "FAQ sync: reconcile tags to web labels",
     );
-    console.log(`[faq-sync] created forum tags: ${toAdd.join(", ")}`);
+    const removed = existing
+      .filter((t) => !desiredSet.has(t.name.toLowerCase()))
+      .map((t) => t.name);
+    const added = desired.filter(
+      (n) => !existingByName.has(n.toLowerCase()),
+    );
+    console.log(
+      `[faq-sync] tags reconciled (+${added.length} -${removed.length})` +
+        (added.length ? ` added: ${added.join(", ")}` : "") +
+        (removed.length ? ` removed: ${removed.join(", ")}` : ""),
+    );
     return updated.availableTags;
   } catch (error: any) {
     console.error(
-      `[faq-sync] could not create tags (${error?.message ?? error}); ` +
-        "check the bot's Manage Channels permission. Proceeding without them.",
+      `[faq-sync] could not reconcile tags (${error?.message ?? error}); ` +
+        "check the bot's Manage Channels permission. Proceeding without changes.",
     );
     return existing;
   }
@@ -251,9 +261,10 @@ export async function syncFaq(
   const feed = await fetchFaqFeed();
   const forum = getForumChannel(FAQ_CHANNEL.id) as ForumChannel;
 
-  // Mirror the web FAQ labels as forum tags (creates any missing ones).
+  // Mirror the web FAQ labels as the forum's tag set (creates missing,
+  // removes orphaned legacy tags).
   const usedLabels = feed.entries.flatMap((e) => e.labels);
-  const availableTags = await ensureForumTags(forum, usedLabels);
+  const availableTags = await reconcileForumTags(forum, usedLabels);
 
   const threads = await loadThreads(FAQ_CHANNEL.id);
   // Bot-authored threads we manage, keyed by FAQ id (first one wins).
