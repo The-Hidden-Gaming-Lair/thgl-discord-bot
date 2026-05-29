@@ -64,7 +64,9 @@ everywhere so the first run can be inspected before anything is removed.
 
 **Discord permissions** the bot role needs in the FAQ forum: *Create Posts*,
 *Send Messages in Threads*, *Manage Threads* (to unarchive on update and delete
-legacy/orphan threads), and *Manage Messages* (to edit starter messages).
+legacy/orphan threads), *Manage Messages* (to edit starter messages), and
+*Manage Channels* (to create the web-label tags on the forum). Without Manage
+Channels the sync still runs; it just logs that it couldn't create tags.
 
 **First migration**
 

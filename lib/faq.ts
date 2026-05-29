@@ -42,23 +42,13 @@ type FaqFeed = {
   entries: FaqEntry[];
 };
 
-// FAQ label → forum tag NAME. Resolved to tag IDs at runtime against the
-// channel's available tags, so it survives tag-ID changes. Unmapped labels
-// fall back to FALLBACK_TAG_NAME.
-const LABEL_TO_TAG_NAME: Record<string, string> = {
-  Palia: "Palia",
-  "Once Human": "Once Human",
-  Palworld: "Palworld",
-  "Dune: Awakening": "THGL",
-  "New World": "Aeternum Map",
-  Overwolf: "THGL",
-  "Companion App": "THGL",
-  General: "THGL",
-  Linux: "THGL",
-  Subscription: "THGL",
-  Technical: "THGL",
-};
+// Forum threads are tagged with the entry's own web FAQ labels (1:1 by name).
+// Missing label tags are created on the forum during sync (ensureForumTags),
+// so the Discord tags mirror the website. FALLBACK is only used if a label
+// somehow has no tag (e.g. the 20-tag forum cap was hit).
 const FALLBACK_TAG_NAME = "THGL";
+// Discord allows at most 20 tags per forum channel.
+const MAX_FORUM_TAGS = 20;
 
 export type FaqSyncAction =
   | { action: "create"; id: string; headline: string }
@@ -160,8 +150,7 @@ function resolveTagIds(
   );
   const ids = new Set<string>();
   for (const label of labels) {
-    const tagName = LABEL_TO_TAG_NAME[label] ?? FALLBACK_TAG_NAME;
-    const id = byName.get(tagName.toLowerCase());
+    const id = byName.get(label.toLowerCase());
     if (id) ids.add(id);
   }
   if (ids.size === 0) {
@@ -169,6 +158,57 @@ function resolveTagIds(
     if (fallback) ids.add(fallback);
   }
   return [...ids].slice(0, MAX_APPLIED_TAGS);
+}
+
+/**
+ * Ensure the forum has a tag for every label used by the FAQ, creating the
+ * missing ones (requires Manage Channels). Existing tags are preserved.
+ * Returns the up-to-date tag list. On failure (e.g. missing permission), logs
+ * and returns the current tags so the sync can still proceed.
+ */
+async function ensureForumTags(
+  forum: ForumChannel,
+  requiredLabels: string[],
+): Promise<GuildForumTag[]> {
+  const existing = forum.availableTags;
+  const existingNames = new Set(existing.map((t) => t.name.toLowerCase()));
+  const missing = [...new Set(requiredLabels)].filter(
+    (name) => !existingNames.has(name.toLowerCase()),
+  );
+  if (missing.length === 0) return existing;
+
+  const room = MAX_FORUM_TAGS - existing.length;
+  if (room <= 0) {
+    console.warn(
+      `[faq-sync] forum at ${MAX_FORUM_TAGS}-tag limit; cannot add: ${missing.join(", ")}`,
+    );
+    return existing;
+  }
+  const toAdd = missing.slice(0, room);
+
+  try {
+    const merged = [
+      ...existing.map((t) => ({
+        id: t.id,
+        name: t.name,
+        moderated: t.moderated,
+        emoji: t.emoji?.id || t.emoji?.name ? t.emoji : null,
+      })),
+      ...toAdd.map((name) => ({ name, moderated: false })),
+    ];
+    const updated = await forum.setAvailableTags(
+      merged,
+      "FAQ sync: add web label tags",
+    );
+    console.log(`[faq-sync] created forum tags: ${toAdd.join(", ")}`);
+    return updated.availableTags;
+  } catch (error: any) {
+    console.error(
+      `[faq-sync] could not create tags (${error?.message ?? error}); ` +
+        "check the bot's Manage Channels permission. Proceeding without them.",
+    );
+    return existing;
+  }
 }
 
 /** Extract the FAQ id from a synced thread's starter body (the canonical link). */
@@ -210,7 +250,10 @@ export async function syncFaq(
   const applyDeletes = options.applyDeletes ?? false;
   const feed = await fetchFaqFeed();
   const forum = getForumChannel(FAQ_CHANNEL.id) as ForumChannel;
-  const availableTags = forum.availableTags;
+
+  // Mirror the web FAQ labels as forum tags (creates any missing ones).
+  const usedLabels = feed.entries.flatMap((e) => e.labels);
+  const availableTags = await ensureForumTags(forum, usedLabels);
 
   const threads = await loadThreads(FAQ_CHANNEL.id);
   // Bot-authored threads we manage, keyed by FAQ id (first one wins).
