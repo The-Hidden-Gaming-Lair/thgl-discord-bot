@@ -115,37 +115,37 @@ function absolutizeLinks(markdown: string): string {
 }
 
 /**
- * Build the starter-message body for an entry. The question is shown above
- * the answer (the answer often only makes sense as a reply to it, e.g. a
- * leading "No,…"), mirroring the web page. The trailing canonical link also
- * serves as the identity marker used to match threads on resync.
+ * Build the starter-message body for an entry. The thread title carries the
+ * question (see threadName), so the body is just the answer. The trailing
+ * canonical link also serves as the identity marker used to match threads on
+ * resync.
  */
 export function buildPostBody(entry: FaqEntry, baseUrl: string): string {
   const url = webUrl(baseUrl, entry.id);
-  const heading = `**${entry.question.trim()}**\n\n`;
   const answer = absolutizeLinks(entry.answer.trim());
 
   // Most answers fit whole; only say "read the full answer" when truncated.
   const linkFooter = `\n\n🔗 **Web version:** ${url}`;
   const truncFooter = `\n\n📖 **Read the full answer:** ${url}`;
 
-  if (heading.length + answer.length + linkFooter.length <= MAX_MESSAGE_LENGTH) {
-    return heading + answer + linkFooter;
+  if (answer.length + linkFooter.length <= MAX_MESSAGE_LENGTH) {
+    return answer + linkFooter;
   }
 
   // Truncate the answer at the last newline that fits, else a hard cut.
   const ellipsis = "\n\n…";
-  const budget =
-    MAX_MESSAGE_LENGTH - heading.length - truncFooter.length - ellipsis.length;
+  const budget = MAX_MESSAGE_LENGTH - truncFooter.length - ellipsis.length;
   let cut = answer.lastIndexOf("\n", budget);
   if (cut < budget * 0.6) {
     cut = budget; // no convenient newline; hard cut
   }
-  return heading + answer.slice(0, cut).trimEnd() + ellipsis + truncFooter;
+  return answer.slice(0, cut).trimEnd() + ellipsis + truncFooter;
 }
 
+// The thread title is the question (the answer reads as a reply to it, e.g. a
+// leading "No,…"), matching the web FAQ detail page.
 function threadName(entry: FaqEntry): string {
-  const name = entry.headline?.trim() || entry.question.trim();
+  const name = entry.question?.trim() || entry.headline.trim();
   return name.length > MAX_THREAD_NAME_LENGTH
     ? name.slice(0, MAX_THREAD_NAME_LENGTH - 1).trimEnd() + "…"
     : name;
