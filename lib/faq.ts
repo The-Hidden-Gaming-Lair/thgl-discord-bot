@@ -221,10 +221,15 @@ async function reconcileForumTags(
   }
 }
 
-/** Extract the FAQ id from a synced thread's starter body (the canonical link). */
+/**
+ * Extract the FAQ id from a synced thread's starter body. The identity marker
+ * is the canonical "Web version" footer link, which is always last — answers
+ * may contain inline links to *other* /faq/ pages, so match the LAST one, not
+ * the first (matching the first swaps identities between cross-linked entries).
+ */
 function parseFaqId(content: string): string | null {
-  const match = content.match(/th\.gl\/faq\/([a-z0-9-]+)/i);
-  return match ? match[1] : null;
+  const matches = [...content.matchAll(/th\.gl\/faq\/([a-z0-9-]+)/gi)];
+  return matches.length ? matches[matches.length - 1][1] : null;
 }
 
 type ThreadInfo = {
