@@ -1,5 +1,6 @@
 import { ForumChannel, ThreadChannel } from "discord.js";
 import { getForumChannel, getForumPosts } from "./discord";
+import { rewriteDiscordCdn } from "./discord-cdn";
 
 type ForumAvailableTag = ForumChannel["availableTags"][number];
 
@@ -83,9 +84,9 @@ export async function getForumPostsData(id: string, limit?: number) {
           images:
             starterMessage?.attachments
               .filter((att) => att.contentType?.startsWith("image"))
-              .map((att) => att.url) || [],
+              .map((att) => rewriteDiscordCdn(att.url)) || [],
           attachments: starterMessage?.attachments.map((att) => ({
-            url: att.url,
+            url: rewriteDiscordCdn(att.url),
             contentType: att.contentType,
             name: att.name,
             size: att.size,
@@ -107,10 +108,10 @@ export async function getForumPostsData(id: string, limit?: number) {
               iconURL: embed.footer.iconURL,
             } : null,
             thumbnail: embed.thumbnail ? {
-              url: embed.thumbnail.url,
+              url: rewriteDiscordCdn(embed.thumbnail.url),
             } : null,
             image: embed.image ? {
-              url: embed.image.url,
+              url: rewriteDiscordCdn(embed.image.url),
             } : null,
             fields: embed.fields.map((field) => ({
               name: field.name,
@@ -162,9 +163,9 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
       timestamp: msg.createdTimestamp,
       images: msg.attachments
         .filter((att) => att.contentType?.startsWith("image"))
-        .map((att) => att.url),
+        .map((att) => rewriteDiscordCdn(att.url)),
       attachments: msg.attachments.map((att) => ({
-        url: att.url,
+        url: rewriteDiscordCdn(att.url),
         contentType: att.contentType,
         name: att.name,
         size: att.size,
@@ -186,10 +187,10 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
           iconURL: embed.footer.iconURL,
         } : null,
         thumbnail: embed.thumbnail ? {
-          url: embed.thumbnail.url,
+          url: rewriteDiscordCdn(embed.thumbnail.url),
         } : null,
         image: embed.image ? {
-          url: embed.image.url,
+          url: rewriteDiscordCdn(embed.image.url),
         } : null,
         fields: embed.fields.map((field) => ({
           name: field.name,
@@ -227,9 +228,9 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
       images:
         starterMessage?.attachments
           .filter((att) => att.contentType?.startsWith("image"))
-          .map((att) => att.url) || [],
+          .map((att) => rewriteDiscordCdn(att.url)) || [],
       attachments: starterMessage?.attachments.map((att) => ({
-        url: att.url,
+        url: rewriteDiscordCdn(att.url),
         contentType: att.contentType,
         name: att.name,
         size: att.size,
@@ -251,10 +252,10 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
           iconURL: embed.footer.iconURL,
         } : null,
         thumbnail: embed.thumbnail ? {
-          url: embed.thumbnail.url,
+          url: rewriteDiscordCdn(embed.thumbnail.url),
         } : null,
         image: embed.image ? {
-          url: embed.image.url,
+          url: rewriteDiscordCdn(embed.image.url),
         } : null,
         fields: embed.fields.map((field) => ({
           name: field.name,

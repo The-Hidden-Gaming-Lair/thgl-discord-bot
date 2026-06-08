@@ -229,6 +229,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1502369547980636180"],
     titleKeywords: ["conan exiles enhanced", "conan exiles", "conan"],
   },
+  {
+    name: "gothic-1-remake",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1513475277374623897"],
+    titleKeywords: ["gothic 1 remake", "gothic 1", "gothic remake"],
+  },
 ];
 
 /**

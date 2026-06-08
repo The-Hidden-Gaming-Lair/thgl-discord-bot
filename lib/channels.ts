@@ -150,6 +150,10 @@ export const UPDATES_CHANNELS: {
     name: "conan-exiles",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "gothic-1-remake",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
