@@ -28,6 +28,11 @@ This repo is part of a larger ecosystem of tools and services powering The Hidde
 - **Integrates with Web & App Frontends**  
   Used to show release notes, patch summaries, and community news in the THGL ecosystem.
 
+- **Game Role IDs API**  
+  `GET /api/roles` returns `[{ name, roleId, channelId }]` for each game (from
+  `lib/game-roles.ts`), so tools can build the `<@&ROLE_ID>` announcement ping
+  mention without hardcoding role IDs.
+
 - **Lightweight & Fast**  
   Built with Bun for performance and simplicity.
 

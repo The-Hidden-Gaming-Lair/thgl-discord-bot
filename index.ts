@@ -5,6 +5,7 @@ import { handleSuggestionsIssues } from "./routes/suggestions-issues/route";
 import { handleUpdates } from "./routes/updates/route";
 import { handleMcpApi } from "./routes/mcp-api/route";
 import { handleFaq } from "./routes/faq/route";
+import { handleRoles } from "./routes/roles/route";
 import { setupSpamGuard } from "./lib/spam-guard";
 import { startFaqSyncScheduler } from "./lib/faq-scheduler";
 
@@ -33,6 +34,9 @@ const server = Bun.serve({
     }
     if (url.pathname.startsWith("/api/faq")) {
       return handleFaq(req, url);
+    }
+    if (url.pathname.startsWith("/api/roles")) {
+      return handleRoles(req, url);
     }
     return new ClientResponse("404!", { status: 404 });
   },

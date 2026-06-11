@@ -40,6 +40,7 @@ This Discord bot exposes API endpoints for THGL Discord channel content:
   - Note: Posts with deleted starter messages will have empty content
 - `/api/suggestions-issues/{postId}` - Returns single forum post with ALL replies, reactions, and full details
 - `/api/faq/sync` (POST) - Web→Discord FAQ sync. Reconciles the FAQ forum (FAQ_CHANNEL in `lib/channels.ts`) against the canonical web feed. `?apply=true` also deletes legacy/orphaned threads (default dry-run for deletions). Optional `FAQ_SYNC_SECRET` via `x-sync-secret` header or `?secret=`.
+- `/api/roles` (GET) - Returns `[{ name, roleId, channelId }]` for every game in `lib/game-roles.ts` that has a `roleIds` entry. Lets other tools build the `<@&ROLE_ID>` announcement ping mention without hardcoding role IDs (consumed by data-forge `scripts/draft-release-notes.ts`, which falls back to a baked-in copy if this endpoint is unavailable).
 - Root endpoints list available channels with links
 
 **FAQ Sync** (`lib/faq.ts`, `lib/faq-scheduler.ts`):
