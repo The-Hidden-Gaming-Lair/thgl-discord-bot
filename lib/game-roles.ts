@@ -116,6 +116,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "night-crows",
     channelId: "1217421560386818088",
+    roleIds: ["1217420268751028314"],
     titleKeywords: ["night crows"],
   },
   {
