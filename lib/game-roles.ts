@@ -174,6 +174,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "grounded2",
     channelId: "1400751543573282876",
+    roleIds: ["1400751086968639490"],
     titleKeywords: ["grounded 2", "grounded ii"],
   },
   {
