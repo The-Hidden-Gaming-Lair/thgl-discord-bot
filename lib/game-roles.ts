@@ -73,6 +73,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "sons-of-the-forest-map",
     channelId: "1086576689745772554",
+    roleIds: ["1086575333890850858"],
     titleKeywords: ["sons of the forest"],
   },
   {
@@ -164,6 +165,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "chrono-odyssey",
     channelId: "1386716236976492694",
+    roleIds: ["1386715436703551609"],
     titleKeywords: ["chrono odyssey"],
   },
   {
