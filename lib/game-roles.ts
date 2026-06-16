@@ -88,6 +88,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   {
     name: "songs-of-conquest",
     channelId: "976935814900645939",
+    roleIds: ["976933955196579860"],
     titleKeywords: ["songs of conquest"],
   },
   {
