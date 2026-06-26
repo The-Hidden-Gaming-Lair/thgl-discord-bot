@@ -240,6 +240,18 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1513475277374623897"],
     titleKeywords: ["gothic 1 remake", "gothic 1", "gothic remake"],
   },
+  {
+    name: "subnautica2",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1519625023260856421"],
+    titleKeywords: ["subnautica 2", "subnautica ii", "subnautica"],
+  },
+  {
+    name: "witchspire",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1519625251510681692"],
+    titleKeywords: ["witchspire"],
+  },
 ];
 
 /**

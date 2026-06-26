@@ -154,6 +154,14 @@ export const UPDATES_CHANNELS: {
     name: "gothic-1-remake",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "subnautica2",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "witchspire",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
