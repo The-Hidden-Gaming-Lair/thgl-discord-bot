@@ -2,6 +2,23 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+## Implementation status — 2026-06-30 (subagent-driven execution)
+
+**DONE (dry-run feature, reviewed + final-approved, safe to merge/deploy):**
+- Phase 1 — `GET /api/games` on games-web, branch `feat/games-api` (commits `ef4908d7`, `1c4bdd52`). Not yet deployed by owner.
+- Phase 2 Tasks 1–5 on bot branch `feat/games-source-of-truth`: `lib/games-feed.ts`, `lib/game-resolver.ts` (+ updates route now resolves roles by title, union w/ hardcoded — strict superset, no regression), `lib/games-provision.ts` (dry-run reconciler: role + channel + onboarding, concurrency-guarded), `routes/games-sync/route.ts`, `lib/games-sync-scheduler.ts`, slug `subnautica2`→`subnautica-2`. Operator scripts kept: `scripts/inspect-server.ts`, `read-onboarding.ts`, `reconcile-games.ts`.
+- All mutations gated behind `apply` (default OFF everywhere); bot lacks the Discord perms for apply to do anything today; feed-undeployed is covered by the bundled fallback.
+
+**BEFORE ENABLING APPLY (do these after the Manage Roles/Channels/Guild grant — see Phase 2 Task 3 Step 5):**
+1. Require `GAMES_SYNC_SECRET` to be set before `?apply=true` is allowed (today the secret is only checked if present).
+2. Convert the apply path to a background task + `GET` status polling like `routes/faq/route.ts` (synchronous apply can exceed `Bun.serve` idleTimeout).
+3. Route the operator script `scripts/reconcile-games.ts` through `runReconcileGames` (the concurrency guard) too.
+4. **Channel-naming decision (BLOCKER for channel auto-create):** legacy channels don't equal `discordId` (`#new-world-map`↔`aeternum-map`, `#sons-of-the-forest`↔`sons-of-the-forest-map`, `#conan-exiles-enhanced`↔`conan-exiles`, `#runescape-dragonwilds`↔`rsdragonwilds`, `#diablo-iv-map`↔`diablo4`, `#palia-map`↔`palia`, `#hogwarts-legacy`↔`hogwarts-legacy-map`). Decide: rename legacy channels to `discordId`, OR add a channel-name field to the feed, OR only ever create `#<discordId>` for brand-new games and grandfather the rest. Role + onboarding provisioning are unaffected.
+
+**STILL TODO (not started — intentionally deferred):**
+- Phase 3 (forum tags → categories + web filtering) — irreversible, needs per-step sign-off.
+- Canonical game `neverness-to-everness` is in the web feed (30 games) but not in the bot's bundled list — it self-resolves once the feed deploys; no action needed unless running fully offline.
+
 **Goal:** Make the th.gl canonical games list the single source of truth for the Discord bot, so new games are provisioned (role + discussion channel) and matched automatically instead of by hand-editing two files and creating Discord objects manually.
 
 **Architecture:** Mirror the existing FAQ web→Discord pattern. games-web exposes `GET /api/games` (1:1 with the existing `/api/faq` route). The bot fetches it, caches it, resolves each game's Discord role by title and discussion channel by `#<discordId>` at runtime, and reconciles missing objects (additive by default; deletes gated off, exactly like `syncFaq`). The hardcoded `channels.ts` / `game-roles.ts` lists degrade to a fallback cache.
