@@ -1,4 +1,11 @@
-import { ChannelType, GuildChannel } from "discord.js";
+import {
+  ChannelType,
+  GuildChannel,
+  CategoryChannel,
+  type Channel,
+  type Role,
+  type TextChannel,
+} from "discord.js";
 import { getChannel } from "./discord";
 import { CENTRAL_UPDATES_CHANNEL_ID } from "./game-roles";
 import { getCanonicalGames } from "./games-feed";
@@ -8,6 +15,9 @@ const APPS_AND_GAMES_CATEGORY = "Apps & Games";
 /** GuildText channels under "Apps & Games" that are NOT game discussion
  *  channels (so they are never treated as orphaned games). */
 const NON_GAME_CHANNELS = new Set<string>(["other-games"]);
+
+// Discord stores channel names lowercased with spaces -> hyphens.
+const channelKey = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
 export interface ReconcileResult {
   rolesCreated: string[];
@@ -28,17 +38,18 @@ export async function reconcileGames(
   await guild.roles.fetch();
   await guild.channels.fetch();
 
-  const roleByTitle = new Map<string, any>();
+  const roleByTitle = new Map<string, Role>();
   for (const r of guild.roles.cache.values()) roleByTitle.set(r.name.toLowerCase(), r);
 
   const category = [...guild.channels.cache.values()].find(
-    (c: any) => c.type === ChannelType.GuildCategory && c.name === APPS_AND_GAMES_CATEGORY,
-  ) as any;
+    (c: Channel) => c.type === ChannelType.GuildCategory && c.name === APPS_AND_GAMES_CATEGORY,
+  ) as CategoryChannel;
   if (!category) throw new Error(`Category "${APPS_AND_GAMES_CATEGORY}" not found`);
 
-  const textChannelByName = new Map<string, any>();
+  const textChannelByName = new Map<string, TextChannel>();
   for (const c of guild.channels.cache.values()) {
-    if (c.type === ChannelType.GuildText) textChannelByName.set(c.name.toLowerCase(), c);
+    if (c.type === ChannelType.GuildText)
+      textChannelByName.set(channelKey(c.name), c as TextChannel);
   }
 
   const result: ReconcileResult = {
@@ -53,20 +64,22 @@ export async function reconcileGames(
         const role = await guild.roles.create({ name: game.title, mentionable: true });
         roleByTitle.set(game.title.toLowerCase(), role);
         result.rolesCreated.push(game.title);
+        console.log(`[apply] created role: ${game.title}`);
       } else {
         result.rolesWouldCreate.push(game.title);
       }
     }
     // Discussion channel #<discordId> under Apps & Games
-    if (!textChannelByName.has(game.discordId.toLowerCase())) {
+    if (!textChannelByName.has(channelKey(game.discordId))) {
       if (apply) {
         const ch = await guild.channels.create({
-          name: game.discordId,
+          name: channelKey(game.discordId),
           type: ChannelType.GuildText,
           parent: category.id,
         });
-        textChannelByName.set(game.discordId.toLowerCase(), ch);
+        textChannelByName.set(channelKey(game.discordId), ch);
         result.channelsCreated.push(game.discordId);
+        console.log(`[apply] created channel: #${game.discordId}`);
       } else {
         result.channelsWouldCreate.push(game.discordId);
       }
@@ -75,13 +88,16 @@ export async function reconcileGames(
 
   // Orphans (report only): GuildText channels under the category whose name is
   // not a canonical discordId and not in the non-game allow-list.
-  const canonical = new Set(games.map((g) => g.discordId.toLowerCase()));
+  // Asymmetry: roles are intentionally NOT orphan-reported or deleted (they
+  // have non-game uses and deletes are out of scope); only channels are
+  // orphan-reported here.
+  const canonical = new Set(games.map((g) => channelKey(g.discordId)));
   for (const c of guild.channels.cache.values()) {
     if (
-      (c as any).parentId === category.id &&
+      c.parentId === category.id &&
       c.type === ChannelType.GuildText &&
-      !canonical.has(c.name.toLowerCase()) &&
-      !NON_GAME_CHANNELS.has(c.name.toLowerCase())
+      !canonical.has(channelKey(c.name)) &&
+      !NON_GAME_CHANNELS.has(channelKey(c.name))
     ) {
       result.orphanChannels.push(c.name);
     }
