@@ -1,4 +1,4 @@
-import { reconcileGames } from "./games-provision";
+import { runReconcileGames } from "./games-provision";
 
 /**
  * Periodic games sync. Defaults are non-destructive: the scheduled run is a
@@ -17,7 +17,12 @@ const STARTUP_DELAY_MS = 15 * 1000;
 async function runOnce() {
   const apply = process.env.GAMES_SYNC_APPLY === "true";
   try {
-    const r = await reconcileGames({ apply });
+    const { alreadyRunning, result: r } = await runReconcileGames({ apply });
+    if (alreadyRunning) {
+      console.log("[games-sync] previous run still in flight, skipping this tick");
+      return;
+    }
+    if (!r) return;
     const verb = apply ? "applied" : "dry-run";
     console.log(
       `[games-sync] ${verb}: roles +${apply ? r.rolesCreated.length : r.rolesWouldCreate.length}, ` +

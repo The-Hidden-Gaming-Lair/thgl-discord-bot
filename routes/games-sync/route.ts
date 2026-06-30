@@ -1,4 +1,4 @@
-import { reconcileGames } from "../../lib/games-provision";
+import { runReconcileGames } from "../../lib/games-provision";
 import { ClientResponse } from "../../lib/http";
 
 /**
@@ -12,6 +12,12 @@ import { ClientResponse } from "../../lib/http";
  * apply=true requires the bot to have Manage Roles/Channels/Guild; if
  * GAMES_SYNC_SECRET is set, apply requests must pass it via the
  * `x-sync-secret` header or `?secret=` query param.
+ *
+ * NOTE: apply runs synchronously within the request. Before enabling apply
+ * (after the bot is granted Manage Roles/Channels/Guild), convert this to a
+ * background task with GET status polling like routes/faq/route.ts — a large
+ * apply makes many sequential Discord writes that can exceed Bun.serve's
+ * idleTimeout. Dry-run (GET / POST without ?apply=true) is read-only and fast.
  */
 export async function handleGamesSync(req: Request, url: URL) {
   if (req.method === "OPTIONS") {
@@ -36,7 +42,13 @@ export async function handleGamesSync(req: Request, url: URL) {
   }
 
   try {
-    const result = await reconcileGames({ apply: wantApply });
+    const { alreadyRunning, result } = await runReconcileGames({ apply: wantApply });
+    if (alreadyRunning) {
+      return ClientResponse.json(
+        { started: false, message: "A games sync is already running." },
+        { status: 409 },
+      );
+    }
     return ClientResponse.json({ apply: wantApply, ...result });
   } catch (err) {
     return ClientResponse.json(

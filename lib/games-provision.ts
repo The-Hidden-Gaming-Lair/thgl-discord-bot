@@ -13,6 +13,8 @@ import { CENTRAL_UPDATES_CHANNEL_ID } from "./game-roles";
 import { getCanonicalGames } from "./games-feed";
 import { resolveRoleId } from "./game-resolver";
 
+let reconcileInFlight = false;
+
 const APPS_AND_GAMES_CATEGORY = "Apps & Games";
 
 const GAME_ONBOARDING_PROMPT_ID = "1100586372844228610";
@@ -118,6 +120,26 @@ export async function reconcileGames(
   await reconcileOnboarding(guild, games, roleByTitle, textChannelByName, apply, result);
 
   return result;
+}
+
+/**
+ * Concurrency-guarded wrapper around reconcileGames. Returns
+ * { alreadyRunning: true } if a run is in flight, else
+ * { alreadyRunning: false, result }. Use this from the HTTP route and the
+ * scheduler so a scheduled tick and a manual sync can't run concurrently
+ * (which, in apply mode, could create duplicate roles/channels).
+ */
+export async function runReconcileGames(
+  opts: { apply?: boolean } = {},
+): Promise<{ alreadyRunning: boolean; result?: ReconcileResult }> {
+  if (reconcileInFlight) return { alreadyRunning: true };
+  reconcileInFlight = true;
+  try {
+    const result = await reconcileGames(opts);
+    return { alreadyRunning: false, result };
+  } finally {
+    reconcileInFlight = false;
+  }
 }
 
 async function reconcileOnboarding(
