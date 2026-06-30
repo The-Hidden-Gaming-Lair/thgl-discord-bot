@@ -9,7 +9,7 @@ import {
   type TextChannel,
 } from "discord.js";
 import { getChannel } from "./discord";
-import { CENTRAL_UPDATES_CHANNEL_ID } from "./game-roles";
+import { CENTRAL_UPDATES_CHANNEL_ID, getGameConfig } from "./game-roles";
 import { getCanonicalGames } from "./games-feed";
 import { resolveRoleId } from "./game-resolver";
 
@@ -21,11 +21,41 @@ const GAME_ONBOARDING_PROMPT_ID = "1100586372844228610";
 const ONBOARDING_OPTION_SOFT_CAP = 50;
 
 /** GuildText channels under "Apps & Games" that are NOT game discussion
- *  channels (so they are never treated as orphaned games). */
-const NON_GAME_CHANNELS = new Set<string>(["other-games"]);
+ *  channels for one of the canonical games (companion apps, trackers, tools),
+ *  so they are never treated as orphaned games. */
+const NON_GAME_CHANNELS = new Set<string>([
+  "other-games",
+  "thgl-companion-app",
+  "new-world-companion",
+  "diablo-iv-companion",
+  "palia-tracker",
+  "skeleton",
+]);
+
+/**
+ * Canonical `discordId` -> existing discussion-channel name, for the games
+ * whose channel predates the discordId naming convention. The reconciler
+ * treats these legacy channels as the game's channel (so it never creates a
+ * duplicate); brand-new games still get a `#<discordId>` channel. Owner chose
+ * this alias-map approach over renaming the live channels.
+ */
+const CHANNEL_ALIASES: Record<string, string> = {
+  "aeternum-map": "new-world-map",
+  "sons-of-the-forest-map": "sons-of-the-forest",
+  "hogwarts-legacy-map": "hogwarts-legacy",
+  "conan-exiles": "conan-exiles-enhanced",
+  "rsdragonwilds": "runescape-dragonwilds",
+  "diablo4": "diablo-iv-map",
+  "palia": "palia-map",
+};
 
 // Discord stores channel names lowercased with spaces -> hyphens.
 const channelKey = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
+
+/** The channel-name key a game's discussion channel is expected under: the
+ *  legacy alias if one exists, otherwise the canonical discordId. */
+const expectedChannelKey = (discordId: string) =>
+  channelKey(CHANNEL_ALIASES[discordId] ?? discordId);
 
 export interface ReconcileResult {
   rolesCreated: string[];
@@ -72,8 +102,16 @@ export async function reconcileGames(
   };
 
   for (const game of games) {
-    // Role (named by title)
-    if (!roleByTitle.has(game.title.toLowerCase())) {
+    // Role: exists if a guild role matches the canonical title, OR a hardcoded
+    // roleId in game-roles.ts points to a live role. The latter covers games
+    // whose canonical title differs from the existing role name (e.g.
+    // "Heroes of Might & Magic: Olden Era" vs the role "HoMM: Olden Era"),
+    // so apply mode never creates a duplicate role for them.
+    const hardcodedRoleId = getGameConfig(game.discordId)?.roleIds?.[0];
+    const hasRole =
+      roleByTitle.has(game.title.toLowerCase()) ||
+      (hardcodedRoleId ? guild.roles.cache.has(hardcodedRoleId) : false);
+    if (!hasRole) {
       if (apply) {
         const role = await guild.roles.create({ name: game.title, mentionable: true });
         roleByTitle.set(game.title.toLowerCase(), role);
@@ -83,8 +121,10 @@ export async function reconcileGames(
         result.rolesWouldCreate.push(game.title);
       }
     }
-    // Discussion channel #<discordId> under Apps & Games
-    if (!textChannelByName.has(channelKey(game.discordId))) {
+    // Discussion channel under Apps & Games. Existing channel may be under a
+    // legacy alias name; only a game with NO channel (by alias or discordId)
+    // gets a new #<discordId> channel.
+    if (!textChannelByName.has(expectedChannelKey(game.discordId))) {
       if (apply) {
         const ch = await guild.channels.create({
           name: channelKey(game.discordId),
@@ -105,7 +145,7 @@ export async function reconcileGames(
   // Asymmetry: roles are intentionally NOT orphan-reported or deleted (they
   // have non-game uses and deletes are out of scope); only channels are
   // orphan-reported here.
-  const canonical = new Set(games.map((g) => channelKey(g.discordId)));
+  const canonical = new Set(games.map((g) => expectedChannelKey(g.discordId)));
   for (const c of guild.channels.cache.values()) {
     if (
       c.parentId === category.id &&
@@ -193,7 +233,7 @@ async function reconcileOnboarding(
       result.onboardingWouldAdd.push(m.title);
       continue;
     }
-    const ch = textChannelByName.get(channelKey(m.discordId));
+    const ch = textChannelByName.get(expectedChannelKey(m.discordId));
     prompt.options.push({
       title: m.title,
       role_ids: [m.roleId],
