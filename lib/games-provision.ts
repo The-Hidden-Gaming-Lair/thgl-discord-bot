@@ -2,6 +2,7 @@ import {
   ChannelType,
   GuildChannel,
   CategoryChannel,
+  Routes,
   type Channel,
   type Role,
   type TextChannel,
@@ -9,8 +10,12 @@ import {
 import { getChannel } from "./discord";
 import { CENTRAL_UPDATES_CHANNEL_ID } from "./game-roles";
 import { getCanonicalGames } from "./games-feed";
+import { resolveRoleId } from "./game-resolver";
 
 const APPS_AND_GAMES_CATEGORY = "Apps & Games";
+
+const GAME_ONBOARDING_PROMPT_ID = "1100586372844228610";
+const ONBOARDING_OPTION_SOFT_CAP = 50;
 
 /** GuildText channels under "Apps & Games" that are NOT game discussion
  *  channels (so they are never treated as orphaned games). */
@@ -25,6 +30,9 @@ export interface ReconcileResult {
   channelsCreated: string[];
   channelsWouldCreate: string[];
   orphanChannels: string[];
+  onboardingWouldAdd: string[];
+  onboardingAdded: string[];
+  onboardingNearCap: boolean;
 }
 
 export async function reconcileGames(
@@ -55,6 +63,7 @@ export async function reconcileGames(
   const result: ReconcileResult = {
     rolesCreated: [], rolesWouldCreate: [],
     channelsCreated: [], channelsWouldCreate: [], orphanChannels: [],
+    onboardingWouldAdd: [], onboardingAdded: [], onboardingNearCap: false,
   };
 
   for (const game of games) {
@@ -102,5 +111,73 @@ export async function reconcileGames(
       result.orphanChannels.push(c.name);
     }
   }
+
+  await reconcileOnboarding(guild, games, textChannelByName, apply, result);
+
   return result;
+}
+
+async function reconcileOnboarding(
+  guild: any,
+  games: { discordId: string; title: string }[],
+  textChannelByName: Map<string, any>,
+  apply: boolean,
+  result: ReconcileResult,
+) {
+  const onboarding: any = await guild.client.rest.get(Routes.guildOnboarding(guild.id));
+  const prompt = (onboarding.prompts ?? []).find(
+    (p: any) => p.id === GAME_ONBOARDING_PROMPT_ID,
+  );
+  if (!prompt) {
+    throw new Error(`Onboarding prompt ${GAME_ONBOARDING_PROMPT_ID} not found`);
+  }
+
+  const coveredRoleIds = new Set<string>();
+  for (const o of prompt.options ?? [])
+    for (const rid of o.role_ids ?? []) coveredRoleIds.add(rid);
+
+  // Resolve each game's role id; missing if null or not referenced by any option.
+  const missing: { title: string; roleId: string | null; discordId: string }[] = [];
+  for (const game of games) {
+    const roleId = await resolveRoleId(game.discordId);
+    if (!roleId || !coveredRoleIds.has(roleId)) {
+      missing.push({ title: game.title, roleId, discordId: game.discordId });
+    }
+  }
+  if (missing.length === 0) return;
+
+  if (prompt.options.length + missing.length >= ONBOARDING_OPTION_SOFT_CAP) {
+    result.onboardingNearCap = true;
+    console.warn(
+      `[provision] onboarding prompt nearing ${ONBOARDING_OPTION_SOFT_CAP}-option cap ` +
+        `(${prompt.options.length} existing + ${missing.length} new)`,
+    );
+  }
+
+  for (const m of missing) {
+    if (!apply) {
+      result.onboardingWouldAdd.push(m.title);
+      continue;
+    }
+    const ch = textChannelByName.get(channelKey(m.discordId));
+    prompt.options.push({
+      title: m.title,
+      role_ids: m.roleId ? [m.roleId] : [],
+      channel_ids: ch ? [ch.id] : [],
+    });
+    console.log(`[apply] added onboarding option: ${m.title}`);
+    result.onboardingAdded.push(m.title);
+  }
+
+  if (apply && result.onboardingAdded.length > 0) {
+    await guild.client.rest.put(Routes.guildOnboarding(guild.id), {
+      body: {
+        enabled: onboarding.enabled,
+        default_channel_ids: onboarding.default_channel_ids,
+        mode: onboarding.mode,
+        prompts: onboarding.prompts,
+      },
+      reason: "games-provision: add onboarding options for new games",
+    });
+  }
 }
