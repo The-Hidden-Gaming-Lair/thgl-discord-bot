@@ -1,3 +1,4 @@
+import { GuildChannel } from "discord.js";
 import { getChannel } from "./discord";
 import { CENTRAL_UPDATES_CHANNEL_ID, getGameConfig } from "./game-roles";
 import { getCanonicalGames } from "./games-feed";
@@ -8,12 +9,20 @@ let roleCache: { at: number; byTitle: Map<string, string> } | null = null;
 /** name(lowercased) -> roleId, from the live guild. Cached for 5 minutes. */
 async function guildRoleIndex(): Promise<Map<string, string>> {
   if (roleCache && Date.now() - roleCache.at < TTL_MS) return roleCache.byTitle;
-  const channel = getChannel(CENTRAL_UPDATES_CHANNEL_ID) as any;
-  const roles = await channel.guild.roles.fetch();
-  const byTitle = new Map<string, string>();
-  for (const role of roles.values()) byTitle.set(role.name.toLowerCase(), role.id);
-  roleCache = { at: Date.now(), byTitle };
-  return byTitle;
+  try {
+    const channel = getChannel(CENTRAL_UPDATES_CHANNEL_ID) as GuildChannel;
+    console.log("[game-resolver] Fetching guild roles...");
+    const roles = await channel.guild.roles.fetch();
+    const byTitle = new Map<string, string>();
+    for (const role of roles.values()) byTitle.set(role.name.toLowerCase(), role.id);
+    roleCache = { at: Date.now(), byTitle };
+    return byTitle;
+  } catch (err) {
+    console.warn(
+      `[game-resolver] guild roles fetch failed, using hardcoded fallback: ${(err as Error).message}`,
+    );
+    return new Map();
+  }
 }
 
 /**

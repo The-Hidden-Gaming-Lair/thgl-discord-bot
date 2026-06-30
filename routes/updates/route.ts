@@ -51,7 +51,7 @@ async function getMessagesFromCentralChannel(gameName: string, limit: number = 5
   const allMessages = await getAppUpdatesMessages();
 
   // Resolve the game's role once per request: live guild role (by title)
-  // unioned with any hardcoded roleIds, so empty hardcoded config still matches.
+  // unioned with hardcoded roleIds; each is independently sufficient.
   const resolved = await resolveRoleId(gameName);
   const hardcoded = getGameConfig(gameName)?.roleIds ?? [];
   const candidateRoleIds = [
