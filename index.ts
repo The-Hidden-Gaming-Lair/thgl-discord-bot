@@ -6,14 +6,17 @@ import { handleUpdates } from "./routes/updates/route";
 import { handleMcpApi } from "./routes/mcp-api/route";
 import { handleFaq } from "./routes/faq/route";
 import { handleRoles } from "./routes/roles/route";
+import { handleGamesSync } from "./routes/games-sync/route";
 import { setupSpamGuard } from "./lib/spam-guard";
 import { startFaqSyncScheduler } from "./lib/faq-scheduler";
+import { startGamesSyncScheduler } from "./lib/games-sync-scheduler";
 
 await initDiscord();
 const client = getClient();
 console.log(`Ready! Logged in as ${client.user.tag}`);
 setupSpamGuard(client);
 startFaqSyncScheduler();
+startGamesSyncScheduler();
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
@@ -37,6 +40,9 @@ const server = Bun.serve({
     }
     if (url.pathname.startsWith("/api/roles")) {
       return handleRoles(req, url);
+    }
+    if (url.pathname.startsWith("/api/games/sync")) {
+      return handleGamesSync(req, url);
     }
     return new ClientResponse("404!", { status: 404 });
   },

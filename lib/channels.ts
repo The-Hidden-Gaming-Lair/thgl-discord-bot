@@ -155,7 +155,7 @@ export const UPDATES_CHANNELS: {
     id: "", // No dedicated channel - uses central channel only
   },
   {
-    name: "subnautica2",
+    name: "subnautica-2",
     id: "", // No dedicated channel - uses central channel only
   },
   {

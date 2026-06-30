@@ -241,7 +241,7 @@ export const GAME_CONFIGS: GameConfig[] = [
     titleKeywords: ["gothic 1 remake", "gothic 1", "gothic remake"],
   },
   {
-    name: "subnautica2",
+    name: "subnautica-2",
     channelId: "", // No dedicated channel - uses central channel only
     roleIds: ["1519625023260856421"],
     titleKeywords: ["subnautica 2", "subnautica ii", "subnautica"],
