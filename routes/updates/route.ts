@@ -2,37 +2,32 @@ import { UPDATES_CHANNELS } from "../../lib/channels";
 import { ClientResponse } from "../../lib/http";
 import { getMessages } from "../../lib/messages";
 import { getAppUpdatesMessages } from "../../lib/app-updates-cache";
-import { getGameConfig, findGameByTitle } from "../../lib/game-roles";
+import { getGameConfig } from "../../lib/game-roles";
 import { getChannel } from "../../lib/discord";
+import { resolveRoleId } from "../../lib/game-resolver";
 import type { Message } from "discord.js";
 
 /**
  * Check if a message matches a game by role mentions or title keywords
  */
-function messageMatchesGame(message: Message, gameName: string): boolean {
-  const gameConfig = getGameConfig(gameName);
-  if (!gameConfig) return false;
-
-  // Check if message mentions any of the game's roles
-  if (gameConfig.roleIds && gameConfig.roleIds.length > 0) {
+function messageMatchesGame(
+  message: Message,
+  gameName: string,
+  candidateRoleIds: string[],
+): boolean {
+  // Match by role mention (live-resolved role unioned with hardcoded ids)
+  if (candidateRoleIds.length > 0) {
     const messageRoleIds = Array.from(message.mentions.roles.keys());
-    const hasRoleMention = gameConfig.roleIds.some((roleId) =>
-      messageRoleIds.includes(roleId)
-    );
-    if (hasRoleMention) return true;
+    if (candidateRoleIds.some((id) => messageRoleIds.includes(id))) return true;
   }
-
-  // Fallback: Check if message title contains game keywords
+  // Fallback: title keywords (first line is usually the title)
+  const gameConfig = getGameConfig(gameName);
   const content = message.content || message.cleanContent || "";
-  const titleMatch = content.split("\n")[0]; // First line is usually the title
-
-  if (gameConfig.titleKeywords) {
+  const titleMatch = content.split("\n")[0];
+  if (gameConfig?.titleKeywords) {
     const lowerTitle = titleMatch.toLowerCase();
-    return gameConfig.titleKeywords.some((keyword) =>
-      lowerTitle.includes(keyword)
-    );
+    return gameConfig.titleKeywords.some((keyword) => lowerTitle.includes(keyword));
   }
-
   return false;
 }
 
@@ -55,11 +50,18 @@ function toMessage(message: Message) {
 async function getMessagesFromCentralChannel(gameName: string, limit: number = 5) {
   const allMessages = await getAppUpdatesMessages();
 
+  // Resolve the game's role once per request: live guild role (by title)
+  // unioned with any hardcoded roleIds, so empty hardcoded config still matches.
+  const resolved = await resolveRoleId(gameName);
+  const hardcoded = getGameConfig(gameName)?.roleIds ?? [];
+  const candidateRoleIds = [
+    ...new Set([...(resolved ? [resolved] : []), ...hardcoded]),
+  ];
+
   const matchingMessages = allMessages.filter((message) =>
-    messageMatchesGame(message, gameName)
+    messageMatchesGame(message, gameName, candidateRoleIds),
   );
 
-  // Return up to `limit` messages
   return matchingMessages.slice(0, limit).map(toMessage);
 }
 
