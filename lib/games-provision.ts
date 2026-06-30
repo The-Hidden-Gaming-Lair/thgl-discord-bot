@@ -4,6 +4,7 @@ import {
   CategoryChannel,
   Routes,
   type Channel,
+  type Guild,
   type Role,
   type TextChannel,
 } from "discord.js";
@@ -32,6 +33,7 @@ export interface ReconcileResult {
   orphanChannels: string[];
   onboardingWouldAdd: string[];
   onboardingAdded: string[];
+  onboardingSkippedNoRole: string[];
   onboardingNearCap: boolean;
 }
 
@@ -63,7 +65,8 @@ export async function reconcileGames(
   const result: ReconcileResult = {
     rolesCreated: [], rolesWouldCreate: [],
     channelsCreated: [], channelsWouldCreate: [], orphanChannels: [],
-    onboardingWouldAdd: [], onboardingAdded: [], onboardingNearCap: false,
+    onboardingWouldAdd: [], onboardingAdded: [], onboardingSkippedNoRole: [],
+    onboardingNearCap: false,
   };
 
   for (const game of games) {
@@ -112,14 +115,15 @@ export async function reconcileGames(
     }
   }
 
-  await reconcileOnboarding(guild, games, textChannelByName, apply, result);
+  await reconcileOnboarding(guild, games, roleByTitle, textChannelByName, apply, result);
 
   return result;
 }
 
 async function reconcileOnboarding(
-  guild: any,
+  guild: Guild,
   games: { discordId: string; title: string }[],
+  roleByTitle: Map<string, Role>,
   textChannelByName: Map<string, any>,
   apply: boolean,
   result: ReconcileResult,
@@ -136,11 +140,19 @@ async function reconcileOnboarding(
   for (const o of prompt.options ?? [])
     for (const rid of o.role_ids ?? []) coveredRoleIds.add(rid);
 
-  // Resolve each game's role id; missing if null or not referenced by any option.
-  const missing: { title: string; roleId: string | null; discordId: string }[] = [];
+  // Resolve each game's role id, preferring the live in-run map (covers roles
+  // created earlier in this same apply run, before resolveRoleId's cache sees
+  // them), then the resolver. Games with no role at all are skipped: we cannot
+  // build a meaningful onboarding option without a role.
+  const missing: { title: string; roleId: string; discordId: string }[] = [];
   for (const game of games) {
-    const roleId = await resolveRoleId(game.discordId);
-    if (!roleId || !coveredRoleIds.has(roleId)) {
+    const roleId =
+      roleByTitle.get(game.title.toLowerCase())?.id ?? (await resolveRoleId(game.discordId));
+    if (!roleId) {
+      result.onboardingSkippedNoRole.push(game.title);
+      continue;
+    }
+    if (!coveredRoleIds.has(roleId)) {
       missing.push({ title: game.title, roleId, discordId: game.discordId });
     }
   }
@@ -162,8 +174,12 @@ async function reconcileOnboarding(
     const ch = textChannelByName.get(channelKey(m.discordId));
     prompt.options.push({
       title: m.title,
-      role_ids: m.roleId ? [m.roleId] : [],
+      role_ids: [m.roleId],
       channel_ids: ch ? [ch.id] : [],
+      description: null,
+      emoji_id: null,
+      emoji_name: null,
+      emoji_animated: false,
     });
     console.log(`[apply] added onboarding option: ${m.title}`);
     result.onboardingAdded.push(m.title);
