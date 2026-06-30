@@ -1,7 +1,13 @@
 import { GAME_CONFIGS } from "./game-roles";
 
 export interface CanonicalGame {
+  /** Stable web id/slug for the game (e.g. "soulframe"). */
   id: string;
+  /**
+   * Canonical slug used to match Discord objects (channel name == this,
+   * role resolved by title). NOT a Discord snowflake — it mirrors the
+   * website Game.discordId field (e.g. "aeternum-map").
+   */
   discordId: string;
   title: string;
   web: string | null;
@@ -28,7 +34,9 @@ export async function getCanonicalGames(force = false): Promise<CanonicalGame[]>
     return cache.games;
   }
   try {
-    const res = await fetch(GAMES_API_URL, { headers: { accept: "application/json" } });
+    const res = await fetch(GAMES_API_URL, {
+      headers: { accept: "application/json", "user-agent": "thgl-discord-bot/games-sync" },
+    });
     if (!res.ok) throw new Error(`games feed ${res.status}`);
     const body = (await res.json()) as { games: CanonicalGame[] };
     if (!Array.isArray(body.games) || body.games.length === 0) {
