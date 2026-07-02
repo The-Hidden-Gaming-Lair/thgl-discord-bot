@@ -1,5 +1,5 @@
 import { initDiscord } from "../lib/discord";
-import { reconcileGames } from "../lib/games-provision";
+import { runReconcileGames } from "../lib/games-provision";
 
 async function main() {
   const apply = process.argv.includes("--apply");
@@ -12,7 +12,13 @@ async function main() {
     process.exit(1);
   }
   await initDiscord();
-  const result = await reconcileGames({ apply });
+  // Route through the concurrency guard so a manual apply can't collide with a
+  // scheduler tick (which, in apply mode, could create duplicate roles/channels).
+  const { alreadyRunning, result } = await runReconcileGames({ apply });
+  if (alreadyRunning) {
+    console.error("A games sync is already running; try again shortly.");
+    process.exit(1);
+  }
   console.log(JSON.stringify(result, null, 2));
   process.exit(0);
 }

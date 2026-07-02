@@ -31,13 +31,19 @@ export async function handleGamesSync(req: Request, url: URL) {
     req.method === "POST" && url.searchParams.get("apply") === "true";
 
   if (wantApply) {
+    // Apply mutates the live server, so it MUST be secret-gated. Refuse if no
+    // secret is configured (never expose an unauthenticated mutation endpoint).
     const secret = process.env.GAMES_SYNC_SECRET;
-    if (secret) {
-      const provided =
-        req.headers.get("x-sync-secret") || url.searchParams.get("secret");
-      if (provided !== secret) {
-        return new ClientResponse("Unauthorized", { status: 401 });
-      }
+    if (!secret) {
+      return new ClientResponse(
+        "apply is disabled: set GAMES_SYNC_SECRET to enable it",
+        { status: 403 },
+      );
+    }
+    const provided =
+      req.headers.get("x-sync-secret") || url.searchParams.get("secret");
+    if (provided !== secret) {
+      return new ClientResponse("Unauthorized", { status: 401 });
     }
   }
 
