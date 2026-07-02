@@ -2,22 +2,41 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-## Implementation status — 2026-06-30 (subagent-driven execution)
+## Implementation status — 2026-07-02: LIVE, apply enabled in production
 
-**DONE (dry-run feature, reviewed + final-approved, safe to merge/deploy):**
-- Phase 1 — `GET /api/games` on games-web, branch `feat/games-api` (commits `ef4908d7`, `1c4bdd52`). Not yet deployed by owner.
-- Phase 2 Tasks 1–5 on bot branch `feat/games-source-of-truth`: `lib/games-feed.ts`, `lib/game-resolver.ts` (+ updates route now resolves roles by title, union w/ hardcoded — strict superset, no regression), `lib/games-provision.ts` (dry-run reconciler: role + channel + onboarding, concurrency-guarded), `routes/games-sync/route.ts`, `lib/games-sync-scheduler.ts`, slug `subnautica2`→`subnautica-2`. Operator scripts kept: `scripts/inspect-server.ts`, `read-onboarding.ts`, `reconcile-games.ts`.
-- All mutations gated behind `apply` (default OFF everywhere); bot lacks the Discord perms for apply to do anything today; feed-undeployed is covered by the bundled fallback.
+**Phases 1–2 are fully shipped and running.** The feed (`https://www.th.gl/api/games`)
+is live; the bot (`main`, through commit `81a8c3f`) reconciles against it every
+30 min **in apply mode** on the production server. A new game added to th.gl is
+provisioned automatically within one scheduler tick: role, discussion channel
+(alphabetically placed), guild emoji (matched by name or uploaded from the
+feed's `logo` URL — Discord accepts the webp directly), and a sorted onboarding
+option with the emoji attached. Everything is additive-only with never-remove
+guards (aborts any write that would drop an option/emoji; failed onboarding PUT
+degrades gracefully via `onboardingError`).
 
-**BEFORE ENABLING APPLY (do these after the Manage Roles/Channels/Guild grant — see Phase 2 Task 3 Step 5):**
-1. Require `GAMES_SYNC_SECRET` to be set before `?apply=true` is allowed (today the secret is only checked if present).
-2. Convert the apply path to a background task + `GET` status polling like `routes/faq/route.ts` (synchronous apply can exceed `Bun.serve` idleTimeout).
-3. Route the operator script `scripts/reconcile-games.ts` through `runReconcileGames` (the concurrency guard) too.
-4. **Channel-naming decision (BLOCKER for channel auto-create):** legacy channels don't equal `discordId` (`#new-world-map`↔`aeternum-map`, `#sons-of-the-forest`↔`sons-of-the-forest-map`, `#conan-exiles-enhanced`↔`conan-exiles`, `#runescape-dragonwilds`↔`rsdragonwilds`, `#diablo-iv-map`↔`diablo4`, `#palia-map`↔`palia`, `#hogwarts-legacy`↔`hogwarts-legacy-map`). Decide: rename legacy channels to `discordId`, OR add a channel-name field to the feed, OR only ever create `#<discordId>` for brand-new games and grandfather the rest. Role + onboarding provisioning are unaffected.
+**Resolved along the way (beyond the original plan):**
+- Legacy channel names ≠ `discordId` → owner chose an **alias map**
+  (`CHANNEL_ALIASES` in `lib/games-provision.ts`) over renaming live channels.
+- Duplicate-role false positive (canonical title vs role name, e.g. HoMM) →
+  role check also accepts a hardcoded roleId resolving to a live role.
+- **Onboarding emoji loss incident:** Discord's GET returns nested `emoji`
+  objects but the full-replace PUT reads only flat `emoji_id`/`emoji_name` —
+  the first apply cleared all option emojis. Fixed (flat mapping + emoji-count
+  guard), all 34 restored, and options now self-heal missing emojis.
+- Apply hardening: `?apply=true` returns 403 unless `GAMES_SYNC_SECRET` is set
+  (secret lives in the server's `docker-compose.yml`, backup at
+  `~/docker-compose.yml.bak-games-sync`); operator script goes through the
+  concurrency guard; scheduler runs apply via `GAMES_SYNC_APPLY=true`.
+- Bot permissions granted: Manage Roles, Manage Channels, Manage Server
+  (= `MANAGE_GUILD`; needed for onboarding), Create Expressions (emoji upload).
 
-**STILL TODO (not started — intentionally deferred):**
+**Known accepted caveat:** HTTP apply still runs synchronously in the request
+(the FAQ-style background-task refactor was skipped). With the server fully
+reconciled, an incremental apply is a handful of REST calls — well inside
+`Bun.serve`'s 20s idleTimeout. Revisit only if a mass backfill is ever needed.
+
+**STILL TODO (intentionally deferred):**
 - Phase 3 (forum tags → categories + web filtering) — irreversible, needs per-step sign-off.
-- Canonical game `neverness-to-everness` is in the web feed (30 games) but not in the bot's bundled list — it self-resolves once the feed deploys; no action needed unless running fully offline.
 
 **Goal:** Make the th.gl canonical games list the single source of truth for the Discord bot, so new games are provisioned (role + discussion channel) and matched automatically instead of by hand-editing two files and creating Discord objects manually.
 
