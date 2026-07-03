@@ -1,6 +1,7 @@
 import { ForumChannel, ThreadChannel } from "discord.js";
 import { getForumChannel, getForumPosts } from "./discord";
 import { rewriteDiscordCdn } from "./discord-cdn";
+import { getSuggestionMeta } from "./suggestions-meta";
 
 type ForumAvailableTag = ForumChannel["availableTags"][number];
 
@@ -68,6 +69,12 @@ export async function getForumPostsData(id: string, limit?: number) {
 
       // Convert tag IDs to tag names/labels
       const tags = mapThreadTags(thread.appliedTags, availableTags);
+      const meta = getSuggestionMeta({
+        threadId: thread.id,
+        title: thread.name ?? "",
+        content: starterMessage?.cleanContent ?? "",
+        appliedTagNames: tags.map((tag) => tag.name),
+      });
 
       return {
         id: thread.id,
@@ -75,6 +82,8 @@ export async function getForumPostsData(id: string, limit?: number) {
         author: starterMessage?.author.username || "Unknown",
         createdAt: thread.createdTimestamp,
         tags,
+        games: meta.games,
+        category: meta.category,
         archived: thread.archived,
         locked: thread.locked,
         messageCount: thread.messageCount || 0,
@@ -206,6 +215,12 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
 
   // Convert tag IDs to tag names/labels
   const tags = mapThreadTags(thread.appliedTags, availableTags);
+  const meta = getSuggestionMeta({
+    threadId: thread.id,
+    title: thread.name ?? "",
+    content: starterMessage?.cleanContent ?? "",
+    appliedTagNames: tags.map((tag) => tag.name),
+  });
 
   return {
     id: thread.id,
@@ -219,6 +234,8 @@ export async function getSingleForumPost(channelId: string, threadId: string) {
     lastActivity:
       thread.lastMessage?.createdTimestamp || thread.createdTimestamp,
     tags,
+    games: meta.games,
+    category: meta.category,
     archived: thread.archived,
     locked: thread.locked,
     messageCount: thread.messageCount || 0,

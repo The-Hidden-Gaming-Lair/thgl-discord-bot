@@ -32,6 +32,8 @@ COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app/index.ts .
 COPY --from=prerelease /usr/src/app/lib lib
 COPY --from=prerelease /usr/src/app/routes routes
+# suggestions-issues forum snapshot (game/category source for lib/suggestions-meta.ts)
+COPY --from=prerelease /usr/src/app/data data
 COPY --from=prerelease /usr/src/app/package.json .
 
 # run the app
