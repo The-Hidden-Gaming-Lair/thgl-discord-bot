@@ -33,12 +33,78 @@ This repo is part of a larger ecosystem of tools and services powering The Hidde
   `lib/game-roles.ts`), so tools can build the `<@&ROLE_ID>` announcement ping
   mention without hardcoding role IDs.
 
+- **Games Sync (web → Discord auto-provisioning)**  
+  The canonical games list on th.gl drives Discord: new games get their role,
+  discussion channel, guild emoji, and onboarding option automatically. See below.
+
+- **Suggestions & Issues API with game/category metadata**  
+  Forum posts are served with `games[]` and `category` (bug/suggestion/question)
+  so th.gl can filter per game without a Discord tag per game.
+
 - **Lightweight & Fast**  
   Built with Bun for performance and simplicity.
 
 - **FAQ Sync (web → Discord)**  
   Mirrors the web FAQ (`faq-entries.ts`, served at `https://www.th.gl/api/faq`)
   into the Discord FAQ forum, so the FAQ is maintained in one place. See below.
+
+## 🎮 Games Sync (auto-provisioning)
+
+The canonical games list (`https://www.th.gl/api/games`, from `@repo/lib`
+`games` in the web monorepo) is the single source of truth for which games
+exist. The bot reconciles Discord against it every 30 minutes; adding a game on
+th.gl is all that's needed — within one tick the bot provisions:
+
+1. a **role** named after the game title (members claim it via onboarding),
+2. a **discussion channel** `#<discordId>` under "Apps & Games" (sorted A–Z,
+   specials pinned; legacy channel names are recognized via an alias map),
+3. a **guild emoji** (matched by name, or uploaded from the game's logo URL),
+4. an **onboarding option** (role + channel + emoji) in the game prompt, sorted.
+
+Everything is **additive-only**: the reconciler never deletes or renames roles,
+channels, emojis, or onboarding options, and it aborts any onboarding write
+that would drop an existing option or emoji. Orphans are report-only.
+
+**Trigger**
+
+```
+GET  /api/games/sync             # dry-run report (read-only)
+POST /api/games/sync?apply=true  # create missing objects (requires secret)
+```
+
+`apply=true` returns 403 unless `GAMES_SYNC_SECRET` is configured. Operator
+alternative: `bun run scripts/reconcile-games.ts [--apply --force]`.
+
+**Environment**
+
+| Variable                 | Default                        | Purpose                                                |
+| ------------------------ | ------------------------------ | ------------------------------------------------------ |
+| `GAMES_API_URL`          | `https://www.th.gl/api/games`  | Canonical games feed (falls back to the bundled list). |
+| `GAMES_SYNC_SECRET`      | _(unset — apply disabled)_     | Required via `x-sync-secret` header or `?secret=` for apply. |
+| `GAMES_SYNC_ENABLED`     | on                             | Set `false` to disable the scheduler.                  |
+| `GAMES_SYNC_INTERVAL_MS` | `1800000` (30 min)             | Scheduler poll interval.                               |
+| `GAMES_SYNC_APPLY`       | `false`                        | `true` lets the scheduler create missing objects.      |
+
+**Discord permissions** the bot needs for apply: *Manage Roles*, *Manage
+Channels*, *Manage Server* (edit onboarding), *Create Expressions* (upload
+emojis). Dry-run needs none of these.
+
+## 💡 Suggestions & Issues
+
+`GET /api/suggestions-issues` (list, `?limit=N`) and
+`GET /api/suggestions-issues/{postId}` (full detail with replies) serve the
+`#suggestions-issues` forum. Each post includes:
+
+- `tags` — the live Discord forum tags (**Coding / Bug / Suggestion / Question**;
+  the forum's 20-tag cap made one-tag-per-game unsustainable),
+- `games[]` — game slugs for per-game filtering on th.gl, resolved from live
+  tags → the committed pre-cutover snapshot (`data/suggestions-snapshot.json`)
+  → keyword detection on title/content,
+- `category` — `bug` / `suggestion` / `question`.
+
+`data/suggestions-snapshot.json` is the permanent backup and game-association
+source for all threads created before the 2026-07 tag cutover — **do not
+delete it**.
 
 ## ❔ FAQ Sync
 
