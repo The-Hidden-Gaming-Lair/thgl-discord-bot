@@ -10,6 +10,21 @@
 
 ---
 
+## ✅ EXECUTED 2026-07-03 — complete, zero post loss (all invariants verified)
+
+All 8 tasks done, all three owner gates approved and executed:
+- **Snapshot/backup**: 854 threads, full starter content, committed (`data/suggestions-snapshot.json`, refreshed immediately pre-swap at `77f8df8`).
+- **Bot API** (`71374b1`): `games[]` + `category` on both suggestions endpoints; snapshot ships in the Docker image and loads in the container.
+- **Web** (games-web `167e8444c`): game dropdown + Bug/Suggestion/Question chips. Pre-cutover equivalence proven: 674/674 tag-derived games covered by `games[]`, 0 mismatches; UI verified live via browser before AND after cutover.
+- **Tag swap applied**: forum now 4/20 tags — Coding (same id, `1021961374231965787`), Bug `1522483546416087163`, Suggestion `…164`, Question `…165`. 10/10 sampled threads retained stale game-tag ids; count 854 unchanged.
+- **Full backfill applied**: 854/854 threads updated (599 suggestion / 229 bug / 26 question, +Coding preserved), 0 failures. `--verify` result: count 854, 0 missing ids, 0 zero-tag threads, 0 archived-state mismatches, 854/854 category-tagged, 20/20 random starter contents byte-identical to backup. **ALL INVARIANTS PASS.**
+- **Guidelines**: approved line appended (game name in title), original text untouched.
+- Post-cutover live checks: API serves category from live tags + games from snapshot; web dropdown populates purely from `games[]` (incl. tag-less games like Diablo IV) and filters correctly.
+
+Notes for the future: new posts pick a category (RequireTag) and get their game from keyword detection (+ guidelines nudge); undetectable posts appear game-less on the web ("All games" only). The snapshot is the permanent historical game-association source — never delete it. A games-web deploy shows a few minutes of chunk-404 skew (rolling replicas) before settling; that is infra, not app, behavior. Pre-existing React #418 hydration warning is site-wide and unrelated.
+
+---
+
 ## ⛔ SAFETY INVARIANTS (owner directive: "REALLY make sure we are not losing any suggestion or issue post")
 
 1. **No delete calls, ever.** No script in this plan may contain `.delete(`, thread deletion, or message deletion. The only Discord mutations are: `setAvailableTags` (forum), `setAppliedTags` / `setArchived` / edit guidelines (channel/thread metadata). None of these can remove a thread or message.
