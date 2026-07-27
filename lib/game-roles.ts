@@ -252,6 +252,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1519625251510681692"],
     titleKeywords: ["witchspire"],
   },
+  {
+    name: "neverness-to-everness",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1522154466722320454"],
+    titleKeywords: ["neverness to everness", "neverness"],
+  },
 ];
 
 /**
