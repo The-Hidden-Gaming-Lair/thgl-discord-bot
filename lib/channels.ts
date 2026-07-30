@@ -162,6 +162,14 @@ export const UPDATES_CHANNELS: {
     name: "witchspire",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "neverness-to-everness",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "dragonsword-awakening",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {

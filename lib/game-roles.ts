@@ -163,6 +163,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     titleKeywords: ["dune: awakening", "dune awakening"],
   },
   {
+    name: "dragonsword-awakening",
+    channelId: "", // No dedicated updates channel (1530294395503382599 is the discussion channel) - uses central channel only
+    roleIds: ["1530294393993433169"],
+    titleKeywords: ["dragonsword", "dragonsword: awakening", "dragonsword awakening"],
+  },
+  {
     name: "chrono-odyssey",
     channelId: "1386716236976492694",
     roleIds: ["1386715436703551609"],
