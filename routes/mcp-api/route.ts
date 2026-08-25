@@ -60,6 +60,24 @@ function formatMessage(message: Message) {
       bot: message.author.bot,
     },
     content: message.cleanContent,
+    // Reply reference: which message this one replied to (Discord "replying to…").
+    // Lets a consumer map terse replies ("these are fixed") back to their target.
+    // messageId is always present for a reply; author/content are best-effort from
+    // the channel cache (the target may be older than the fetched batch).
+    ...(message.reference?.messageId
+      ? {
+          reference: {
+            messageId: message.reference.messageId,
+            author:
+              message.channel.messages.cache.get(message.reference.messageId)
+                ?.author.displayName ?? null,
+            content:
+              message.channel.messages.cache
+                .get(message.reference.messageId)
+                ?.cleanContent?.slice(0, 140) ?? null,
+          },
+        }
+      : {}),
     timestamp: message.createdTimestamp,
     attachments: message.attachments.map((att) => ({
       url: att.url,
