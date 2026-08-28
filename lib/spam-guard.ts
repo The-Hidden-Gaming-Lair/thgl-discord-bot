@@ -20,6 +20,19 @@ const SAFE_ROLE_IDS = [
     : []),
 ];
 
+// Honeypot: first writable channel in display order (spam scripts enumerate
+// the channel list and post into the first channels that accept messages).
+// Created by scripts/setup-trap-channel.ts.
+const TRAP_CHANNEL_ID = process.env.TRAP_CHANNEL_ID ?? "1542957161494093909";
+// Bot signature: only messages with attachments or links get banned in the
+// trap — a confused human typing plain text is deleted + logged, never banned.
+const LINK_RE = /(https?:\/\/\S+|discord\.gg\/\S+|discord(?:app)?\.com\/invite\/\S+)/i;
+
+// Rule 0: instant single-message signatures from recently-joined members
+const RULE0_JOIN_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const RULE0_IMAGE_THRESHOLD = 3;
+const INVITE_ONLY_RE = /^(?:https?:\/\/)?(?:www\.)?discord(?:\.gg|(?:app)?\.com\/invite)\/\S+$/i;
+
 // Rule 1: Cross-channel image spam
 const RULE1_IMAGE_THRESHOLD = 3;
 const RULE1_CHANNEL_THRESHOLD = 2;
@@ -53,6 +66,8 @@ const flaggedUsers = new Set<string>();
 
 function trackMessage(message: Message) {
   if (!message.guild) return;
+  // Bots (including this one) and safe/staff roles are excluded BEFORE any
+  // trap or rule logic — they can never be deleted, banned, or even logged.
   if (message.author.bot) return;
 
   if (SAFE_ROLE_IDS.length > 0 && message.member) {
@@ -61,6 +76,13 @@ function trackMessage(message: Message) {
     );
     if (hasRole) return;
   }
+
+  if (message.channelId === TRAP_CHANNEL_ID) {
+    void handleTrapMessage(message);
+    return;
+  }
+
+  if (checkRule0(message)) return;
 
   const imageCount = message.attachments.filter((a) =>
     a.contentType?.startsWith("image/")
@@ -82,6 +104,116 @@ function trackMessage(message: Message) {
   userMessages.set(message.author.id, existing);
 
   checkRules(message.author.id, message.author.tag, message.client);
+}
+
+function toTrackedMessage(message: Message): TrackedMessage {
+  return {
+    channelId: message.channelId,
+    messageId: message.id,
+    guildId: message.guildId!,
+    timestamp: Date.now(),
+    imageCount: message.attachments.filter((a) =>
+      a.contentType?.startsWith("image/")
+    ).size,
+    content: message.content || "[no text content]",
+  };
+}
+
+/**
+ * Honeypot channel: ANY post is removed. Only messages matching the bot
+ * signature (attachment or link) lead to a ban — plain text is deleted and
+ * logged with no action, so a confused human is never punished.
+ */
+async function handleTrapMessage(message: Message) {
+  const hasAttachment = message.attachments.size > 0;
+  const hasLink = LINK_RE.test(message.content);
+
+  if (hasAttachment || hasLink) {
+    if (flaggedUsers.has(message.author.id)) return;
+    flaggedUsers.add(message.author.id);
+    await handleDetection(
+      message.client,
+      message.author.id,
+      message.author.tag,
+      "Honeypot",
+      `Posted ${hasAttachment ? "attachment(s)" : "a link"} in the trap channel <#${TRAP_CHANNEL_ID}>`,
+      [toTrackedMessage(message)]
+    );
+    return;
+  }
+
+  // Human-looking text post: delete quietly, log for staff, take no action.
+  await message.delete().catch(() => {});
+  if (!MOD_LOG_CHANNEL_ID) return;
+  try {
+    const channel = message.client.channels.cache.get(MOD_LOG_CHANNEL_ID) as
+      | TextChannel
+      | undefined;
+    if (channel) {
+      await channel.send({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("Trap channel post (no action)")
+            .setColor(0xffa500)
+            .setDescription(
+              `${message.author.tag} (<@${message.author.id}>) posted plain text in <#${TRAP_CHANNEL_ID}> — message deleted, user NOT banned.\n\n${message.content.substring(0, 500)}`
+            )
+            .setTimestamp(),
+        ],
+      });
+    }
+  } catch {
+    // Logging must never break handling.
+  }
+}
+
+/**
+ * Rule 0: single-message signatures so obvious they warrant instant action —
+ * but ONLY for members who joined less than 7 days ago. Established members
+ * can never trigger it.
+ */
+function checkRule0(message: Message): boolean {
+  const joinedAt = message.member?.joinedTimestamp;
+  if (!joinedAt || Date.now() - joinedAt > RULE0_JOIN_AGE_MS) {
+    return false;
+  }
+  if (flaggedUsers.has(message.author.id)) return true;
+
+  const imageCount = message.attachments.filter((a) =>
+    a.contentType?.startsWith("image/")
+  ).size;
+  const noText = message.content.trim().length === 0;
+
+  if (imageCount >= RULE0_IMAGE_THRESHOLD && noText) {
+    flaggedUsers.add(message.author.id);
+    void handleDetection(
+      message.client,
+      message.author.id,
+      message.author.tag,
+      "Image burst (new member)",
+      `${imageCount} images with no text in a single message, member joined <7 days ago`,
+      [toTrackedMessage(message)]
+    );
+    return true;
+  }
+
+  if (
+    message.attachments.size === 0 &&
+    INVITE_ONLY_RE.test(message.content.trim())
+  ) {
+    flaggedUsers.add(message.author.id);
+    void handleDetection(
+      message.client,
+      message.author.id,
+      message.author.tag,
+      "Invite link (new member)",
+      "Message is nothing but a Discord invite link, member joined <7 days ago",
+      [toTrackedMessage(message)]
+    );
+    return true;
+  }
+
+  return false;
 }
 
 function checkRules(userId: string, userTag: string, client: Client) {
@@ -165,9 +297,11 @@ async function handleDetection(
 
   // Log to mod channel
   try {
-    const channel = client.channels.cache.get(MOD_LOG_CHANNEL_ID) as
-      | TextChannel
-      | undefined;
+    const channel = MOD_LOG_CHANNEL_ID
+      ? (client.channels.cache.get(MOD_LOG_CHANNEL_ID) as
+          | TextChannel
+          | undefined)
+      : undefined;
     if (channel) {
       await channel.send({ embeds: [embed] });
     } else {

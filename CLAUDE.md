@@ -67,6 +67,13 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - Production channel perms (applied by `setup-ticket-channels.ts --production`): `@everyone` can view + use the panel and type in threads (`SendMessagesInThreads`), but not write in the channel or create threads; users only see their own ticket (private-thread membership).
 - Operator scripts: `scripts/setup-ticket-channels.ts`, `scripts/publish-ticket-panel.ts`; pure-logic tests in `scripts/test-tickets.ts`.
 
+**Spam Guard** (`lib/spam-guard.ts`):
+
+- Reactive delete+ban rules (mod log: `MOD_LOG_CHANNEL_ID`): Rule 1 cross-channel image spam (≥3 images across ≥2 channels/60s), Rule 2 rapid multi-channel posting (≥4 channels/30s), **Rule 0** instant single-message signatures for members joined <7 days (≥3 images with no text, or a bare Discord invite link).
+- **Honeypot** `#🪤・bot-trap` (`TRAP_CHANNEL_ID`, default 1542957161494093909, created by `scripts/setup-trap-channel.ts`): deliberately the FIRST writable channel in display order — spam scripts enumerate the channel list and post into the first writable channels (confirmed pattern: the recurring campaigns always hit the first writable run in Apps & Games). Any post there is deleted; only posts with attachments/links (the bot signature) get banned — plain text is logged with **no action**, so a confused human is never punished.
+- Bots (incl. this one) and `SAFE_ROLE_IDS`/staff are excluded before ANY rule or trap logic — they can never be actioned.
+- Unread-badge caveat: deleting spam can't clear other users' unread state (no API for that); the trap exists to keep spam out of real channels in the first place.
+
 **Suggestions Meta** (`lib/suggestions-meta.ts`, `data/suggestions-snapshot.json`):
 
 - The suggestions-issues forum has CATEGORY tags (Coding/Bug/Suggestion/Question), not per-game tags (Discord caps forums at 20 tags; the per-game scheme was cut over in 2026-07). Per-game filtering lives on th.gl via the API's `games[]` field.
