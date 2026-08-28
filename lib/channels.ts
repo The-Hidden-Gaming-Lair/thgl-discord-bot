@@ -302,3 +302,13 @@ export const INFO_CHANNELS: {
     id: "1425525600831143946",
   },
 ];
+
+// --- Ticket system (docs/superpowers/specs/2026-08-27-ticket-system-design.md) ---
+// Staff/moderator role auto-added (via role mention) to every ticket thread.
+export const TICKET_STAFF_ROLE_ID = "1173945621963604069";
+// Text channel hosting the ticket panel + private ticket threads.
+// Empty = ticket system inert. Phase 1: staff-only test channel (setup script
+// prints the id); Phase 2 cutover: 1092316764081225788 (📕・support-ticket).
+export const TICKET_CHANNEL_ID = process.env.TICKET_CHANNEL_ID ?? "";
+// Staff-only channel receiving one embed per ticket event. Empty = logging off.
+export const TICKET_LOG_CHANNEL_ID = process.env.TICKET_LOG_CHANNEL_ID ?? "";

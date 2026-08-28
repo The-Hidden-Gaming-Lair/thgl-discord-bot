@@ -147,6 +147,24 @@ Channels the sync still runs; it just logs that it couldn't create tags.
 2. Once the plan looks right, `POST /api/faq/sync?apply=true` to remove the
    legacy `devleon`-authored posts.
 
+## 🎫 Ticket System
+
+Self-hosted replacement for MEE6 ticketing (design:
+`docs/superpowers/specs/2026-08-27-ticket-system-design.md`). One persistent
+private thread per user in the panel channel; OPEN ⇔ thread not archived.
+
+| Env var | Description | Default |
+| --- | --- | --- |
+| `TICKET_CHANNEL_ID` | Text channel with the panel + private ticket threads. Empty = ticket system off. | _(empty)_ |
+| `TICKET_LOG_CHANNEL_ID` | Staff-only channel for ticket event embeds. Empty = logging off. | _(empty)_ |
+| `TICKET_SCHEDULER_ENABLED` | `false` disables the inactivity scheduler. | `true` |
+| `TICKET_SCHEDULER_INTERVAL_MS` | Maintenance scan interval. | `21600000` (6 h) |
+| `TICKET_WARN_AFTER_MS` | Inactivity before the warning message. | `432000000` (5 d) |
+| `TICKET_CLOSE_AFTER_MS` | Inactivity before auto-close (> warn value). | `604800000` (7 d) |
+
+Operator scripts: `scripts/setup-ticket-channels.ts` (create staff-only
+test/log channels), `scripts/publish-ticket-panel.ts` (post/update the panel).
+
 ## 🤝 Access & Contact
 
 The API is private.  

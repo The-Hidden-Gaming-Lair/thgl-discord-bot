@@ -10,6 +10,8 @@ import { handleGamesSync } from "./routes/games-sync/route";
 import { setupSpamGuard } from "./lib/spam-guard";
 import { startFaqSyncScheduler } from "./lib/faq-scheduler";
 import { startGamesSyncScheduler } from "./lib/games-sync-scheduler";
+import { registerTicketListeners } from "./lib/ticket-interactions";
+import { startTicketScheduler } from "./lib/ticket-scheduler";
 
 await initDiscord();
 const client = getClient();
@@ -17,6 +19,8 @@ console.log(`Ready! Logged in as ${client.user.tag}`);
 setupSpamGuard(client);
 startFaqSyncScheduler();
 startGamesSyncScheduler();
+registerTicketListeners(client);
+startTicketScheduler();
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,

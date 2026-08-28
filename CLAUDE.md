@@ -59,6 +59,14 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - **Additive-only, guarded**: never deletes/renames anything; the onboarding full-replace PUT maps Discord's nested `emoji` objects to flat `emoji_id`/`emoji_name` (the PUT ignores nested objects — this once wiped all option emojis) and aborts if any existing option or emoji would be dropped. Orphan channels are report-only. `runReconcileGames` is the concurrency-guarded wrapper the route/scheduler use.
 - Scheduler env: `GAMES_SYNC_ENABLED`, `GAMES_SYNC_INTERVAL_MS` (default 30 min), `GAMES_SYNC_APPLY` (default false = dry-run). Apply needs Discord perms: Manage Roles, Manage Channels, Manage Server (onboarding), Create Expressions (emoji upload).
 
+**Ticket System** (`lib/tickets.ts`, `lib/ticket-interactions.ts`, `lib/ticket-scheduler.ts`):
+
+- Self-hosted replacement for MEE6 ticketing. A ticket is a **private thread** in `TICKET_CHANNEL_ID`, **one persistent thread per user** (close = archive, reopen = unarchive the same thread — full history preserved). Discord is the only data store: threads are matched to users via a `user:<id>` marker in the first bot message's embed footer; **OPEN ⇔ thread not archived** (threads are named after the user and never renamed).
+- Flow: panel button (`thgl:ticket:open`) → modal (subject/description/optional game text) → private thread with opener mention only (no staff ping — owner decision 2026-08-27: staff see every private ticket thread via ManageThreads on the panel channel, and are informed of new/reopened tickets via the log channel). Optional free-text Game/App field is shown in the ticket embed. Close button archives; a user reply to a closed thread auto-unarchives it (no staff re-ping). Inactivity scheduler warns then auto-closes (`TICKET_*` env vars, see README).
+- Inert unless `TICKET_CHANNEL_ID` is set. **Production (since 2026-08-28)**: `TICKET_CHANNEL_ID=1092316764081225788` (📕・support-ticket) + `TICKET_LOG_CHANNEL_ID=1542600991986425916` (`#🎫・ticket-log`, staff-only) are set ONLY in the server's docker-compose. **Never set them in the local `.env` while the production bot runs** — that's the multi-instance kill-switch: interactions are safe either way (every handler acks before side effects, and Discord accepts one ack per interaction), but a second instance with the same env would duplicate scheduler warnings and log embeds.
+- Production channel perms (applied by `setup-ticket-channels.ts --production`): `@everyone` can view + use the panel and type in threads (`SendMessagesInThreads`), but not write in the channel or create threads; users only see their own ticket (private-thread membership).
+- Operator scripts: `scripts/setup-ticket-channels.ts`, `scripts/publish-ticket-panel.ts`; pure-logic tests in `scripts/test-tickets.ts`.
+
 **Suggestions Meta** (`lib/suggestions-meta.ts`, `data/suggestions-snapshot.json`):
 
 - The suggestions-issues forum has CATEGORY tags (Coding/Bug/Suggestion/Question), not per-game tags (Discord caps forums at 20 tags; the per-game scheme was cut over in 2026-07). Per-game filtering lives on th.gl via the API's `games[]` field.
@@ -121,3 +129,6 @@ The `/api/updates/{game}` endpoint:
 - `scripts/extract-role-ids.ts` - Legacy: extract role IDs from app-updates messages
 - `scripts/test-matching.ts` - Test game matching logic against cached messages
 - `scripts/debug-messages.ts` - Debug message structure and role mentions
+- `scripts/setup-ticket-channels.ts` - Ticket system: create staff-only test + log channels (idempotent)
+- `scripts/publish-ticket-panel.ts` - Ticket system: post/update the panel message in TICKET_CHANNEL_ID
+- `scripts/test-tickets.ts` - Ticket system: pure-logic assertions (no token needed)
