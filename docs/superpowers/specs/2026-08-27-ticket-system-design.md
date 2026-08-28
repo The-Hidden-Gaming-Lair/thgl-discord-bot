@@ -123,7 +123,7 @@ Scheduler every `TICKET_SCHEDULER_INTERVAL_MS`: for each **active** (non-archive
 ### Phase 2 — production cutover (executed 2026-08-28)
 
 1. ✅ `TICKET_CHANNEL_ID` → 📕・support-ticket `1092316764081225788` (server docker-compose only — local `.env` must NOT set ticket env; multi-instance kill-switch, see CLAUDE.md); permissions via `setup-ticket-channels.ts --production`; panel via `publish-ticket-panel.ts`.
-2. Owner (pending): delete the MEE6 panel message; disable MEE6 ticketing plugin.
+2. ✅ MEE6 **kicked from the guild entirely** (2026-08-28) — panel message gone with it; #📕・support-ticket now contains only our panel. Its welcome/leveling/automod functions are candidate features for this bot. Legacy `#<number>-<user>` ticket channels + 🎫 ticket categories remain (dead buttons, history preserved) until staff clean them up.
 3. ✅ The 2025-06-18 instructions message deleted — its checklist now lives in the panel embed.
 4. Ticket-log channel stays; `🎫・ticket-test` deleted after cutover; old MEE6 ticket channels cleaned up manually by staff over time.
 
