@@ -304,11 +304,32 @@ export const INFO_CHANNELS: {
 ];
 
 // --- Ticket system (docs/superpowers/specs/2026-08-27-ticket-system-design.md) ---
-// Staff/moderator role auto-added (via role mention) to every ticket thread.
+// Staff/moderator role: grants ManageThreads visibility on the panel channel
+// and is the role each TICKET_STAFF_USER_IDS entry must hold to be added.
 export const TICKET_STAFF_ROLE_ID = "1173945621963604069";
 // Text channel hosting the ticket panel + private ticket threads.
-// Empty = ticket system inert. Phase 1: staff-only test channel (setup script
-// prints the id); Phase 2 cutover: 1092316764081225788 (📕・support-ticket).
+// Empty = ticket system inert. Production: 1092316764081225788 (📕・support-ticket),
+// set ONLY in the server docker-compose (multi-instance kill-switch, see CLAUDE.md).
 export const TICKET_CHANNEL_ID = process.env.TICKET_CHANNEL_ID ?? "";
 // Staff-only channel receiving one embed per ticket event. Empty = logging off.
 export const TICKET_LOG_CHANNEL_ID = process.env.TICKET_LOG_CHANNEL_ID ?? "";
+// Staff members silently added to every ticket thread. Env override:
+// TICKET_STAFF_USER_IDS="id1,id2". Each id is re-verified against the live
+// guild (must still hold TICKET_STAFF_ROLE_ID) before being added, so a stale
+// entry can never join a ticket. An explicit list is used because enumerating
+// role members needs the GuildMembers privileged intent, which requires
+// Discord verification review at this bot's scale.
+export const TICKET_STAFF_USER_IDS: string[] = process.env.TICKET_STAFF_USER_IDS
+  ? process.env.TICKET_STAFF_USER_IDS.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  : [
+      "311400587445141504", // devleon
+      "197529782672424960", // winderine
+      "763566602124918804", // mangogamr
+      "394481834592829441", // .uthar
+      "139320165614616577", // .hava.
+      "513093031830880257", // borys21
+      "325404820347420672", // airakokosuki
+      "102498939755827200", // daleth
+    ];

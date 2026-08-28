@@ -13,12 +13,15 @@ import {
   ThreadAutoArchiveDuration,
   type AnyThreadChannel,
   type Channel,
+  type Guild,
   type TextChannel,
 } from "discord.js";
 import { getClient } from "./discord";
 import {
   TICKET_CHANNEL_ID,
   TICKET_LOG_CHANNEL_ID,
+  TICKET_STAFF_ROLE_ID,
+  TICKET_STAFF_USER_IDS,
 } from "./channels";
 export const TICKET_WARNING_FOOTER = "thgl:ticket:warning";
 export const TICKET_BUTTON_OPEN = "thgl:ticket:open";
@@ -279,11 +282,55 @@ export function buildClosedEmbed(closedBy: string): EmbedBuilder {
     .setTimestamp();
 }
 
+const STAFF_CACHE_TTL_MS = 5 * 60 * 1000;
+let staffCache: { at: number; ids: string[] } | null = null;
+
+async function getStaffMemberIds(guild: Guild): Promise<string[]> {
+  if (staffCache && Date.now() - staffCache.at < STAFF_CACHE_TTL_MS) {
+    return staffCache.ids;
+  }
+  const ids: string[] = [];
+  for (const id of TICKET_STAFF_USER_IDS) {
+    // Single-member fetch needs no privileged intent. `force` bypasses the
+    // cache, which wouldn't see role changes without the GuildMembers intent.
+    const member = await guild.members
+      .fetch({ user: id, force: true })
+      .catch(() => null);
+    if (
+      member &&
+      !member.user.bot &&
+      member.roles.cache.has(TICKET_STAFF_ROLE_ID)
+    ) {
+      ids.push(id);
+    }
+  }
+  staffCache = { at: Date.now(), ids };
+  return ids;
+}
+
+/**
+ * Silently add every configured staff member (re-verified against the staff
+ * role) to the thread. Unlike a role mention this sends no ping (owner
+ * decision 2026-08-27: no pings) — the thread just appears in each staff
+ * member's thread list.
+ */
+async function addStaffToThread(thread: AnyThreadChannel) {
+  try {
+    const ids = await getStaffMemberIds(thread.guild);
+    for (const id of ids) {
+      await thread.members
+        .add(id)
+        .catch(() => {/* individual add failure is non-fatal */});
+    }
+  } catch (err) {
+    console.error("[tickets] adding staff to thread failed", err);
+  }
+}
+
 async function sendTicketMessages(thread: AnyThreadChannel, input: TicketInput) {
-  // The opener mention adds them to the private thread. Staff are NOT
-  // mentioned by design (owner decision 2026-08-27): they see every ticket
-  // thread via ManageThreads on the panel channel, and get new-ticket
-  // awareness from the log channel.
+  // The opener mention adds them to the private thread; staff are added
+  // silently afterwards (addStaffToThread) — never via role mention, which
+  // would ping.
   await thread.send({
     content: `<@${input.userId}>`,
     embeds: [buildTicketEmbed(input)],
@@ -337,6 +384,7 @@ async function doOpenTicket(input: TicketInput): Promise<OpenTicketResult> {
     markBotUnarchive(existing.id);
     await existing.setArchived(false);
     await sendTicketMessages(existing, input);
+    await addStaffToThread(existing); // catches staff who joined the team since creation
     await logTicketEvent("Reopened", {
       userId: input.userId,
       subject: input.subject,
@@ -358,6 +406,7 @@ async function doOpenTicket(input: TicketInput): Promise<OpenTicketResult> {
   // thread via the index and converges on it instead of creating a duplicate.
   registerTicketThread(input.userId, thread.id);
   await sendTicketMessages(thread, input);
+  await addStaffToThread(thread);
   await logTicketEvent("Opened", {
     userId: input.userId,
     subject: input.subject,

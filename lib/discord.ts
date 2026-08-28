@@ -42,6 +42,9 @@ export function initDiscord() {
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        // NOTE: GuildMembers (privileged) is NOT requested — enabling it needs
+        // Discord verification review at this bot's scale. Ticket staff are a
+        // configured ID list instead (TICKET_STAFF_USER_IDS, lib/channels.ts).
       ],
     });
     _client.login(process.env.DISCORD_TOKEN);

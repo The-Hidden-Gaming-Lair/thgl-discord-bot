@@ -21,7 +21,7 @@ We replace it with a ticket system built into this bot (discord.js v14, Bun) for
 | Rollout | Phase 1: staff-only test in new staff-only channels. Phase 2: production cutover in 📕・support-ticket. |
 | Open flow | Button → modal (Subject required, Description required, Game/App optional) |
 | Ticket model | **One persistent private thread per user** (ModMail-style). Close = archive; reopen = unarchive the same thread. Full per-user history in one place. |
-| Staff access | **No pings (owner decision)**: staff role gets ManageThreads on the panel channel and sees every private ticket thread; new-ticket awareness via the staff log channel. Opener added via own mention. |
+| Staff access | **No pings (owner decision)**: every configured staff member (`TICKET_STAFF_USER_IDS`, re-verified per add against the staff role via single-member fetch — no privileged intent) is **silently added** to new/reopened threads via `thread.members.add` — thread appears in their list without a ping. The GuildMembers intent was rejected as an approach: it requires Discord verification review at this bot's scale. Staff role additionally has ManageThreads on the panel channel; the staff log channel records every event. Opener added via own mention. |
 | v1 extras | Staff log channel + auto-close of inactive tickets |
 | State storage | **Approach A: Discord-native, no database.** The thread is the record; the bot stays stateless. |
 
