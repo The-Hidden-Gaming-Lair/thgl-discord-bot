@@ -53,6 +53,22 @@ request, so including unused intents sinks everything.
 
 (Replace ~XX,000 with the actual member count before submitting.)
 
+## Portal fields (General Information tab + review form)
+
+- **Terms of Service URL**: `https://www.th.gl/terms-of-service` (page added
+  to the web monorepo 2026-08-29; covers websites, apps, and the Discord
+  community/bot incl. moderation bans)
+- **Privacy Policy URL**: `https://www.th.gl/privacy-policy` (now includes a
+  "Discord Community & Bot" section disclosing message-content processing:
+  announcements/suggestions republishing, tickets, 60s spam buffer, no
+  sale/sharing/AI training — reviewers check for exactly this)
+- **Install link**: `https://discord.com/oauth2/authorize?client_id=1176153275918204928&scope=bot+applications.commands`
+  — a required form field for every app under review (reviewers use it to
+  verify the app is real). It does NOT make the bot public: keep the
+  **"Public Bot" toggle OFF** in the Bot tab, then only the owner can
+  complete that OAuth flow. Mention in the use case that the app is
+  intentionally private/single-server.
+
 ## Form question notes
 
 - "Do you store message content?" — transiently in memory (≤60s for spam
