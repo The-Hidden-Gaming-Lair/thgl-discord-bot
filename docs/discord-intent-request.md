@@ -62,12 +62,15 @@ request, so including unused intents sinks everything.
   "Discord Community & Bot" section disclosing message-content processing:
   announcements/suggestions republishing, tickets, 60s spam buffer, no
   sale/sharing/AI training — reviewers check for exactly this)
-- **Install link**: `https://discord.com/oauth2/authorize?client_id=1176153275918204928&scope=bot+applications.commands`
-  — a required form field for every app under review (reviewers use it to
-  verify the app is real). It does NOT make the bot public: keep the
-  **"Public Bot" toggle OFF** in the Bot tab, then only the owner can
-  complete that OAuth flow. Mention in the use case that the app is
-  intentionally private/single-server.
+- **Install link**: for a PRIVATE app, Discord requires the opposite of a
+  URL — the portal validation says: "Private application cannot have a
+  default authorization link. Please check that the default authorization
+  link is set to None in the installation tab." So: **Installation tab →
+  Install Link → None**, and keep **"Public Bot" OFF** in the Bot tab.
+  ("Verified apps must be public" refers to App Directory verification —
+  NOT privileged-intent review; private apps can be granted intents.)
+  Mention in the use case that the app is intentionally private and used
+  on a single server.
 
 ## Form question notes
 
