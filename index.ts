@@ -16,6 +16,7 @@ import { registerFaqCommand } from "./lib/faq-command";
 import { registerTicketMessageCommand } from "./lib/ticket-message-command";
 import { registerSuggestionCommand } from "./lib/suggestion-command";
 import { registerUpdatesCommand } from "./lib/updates-command";
+import { registerStatusCommands } from "./lib/status-commands";
 
 await initDiscord();
 const client = getClient();
@@ -29,6 +30,7 @@ registerFaqCommand(client);
 registerTicketMessageCommand(client);
 registerSuggestionCommand(client);
 registerUpdatesCommand(client);
+registerStatusCommands(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,

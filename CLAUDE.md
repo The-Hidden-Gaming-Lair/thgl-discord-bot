@@ -69,6 +69,14 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - Production channel perms (applied by `setup-ticket-channels.ts --production`): `@everyone` can view + use the panel and type in threads (`SendMessagesInThreads`), but not write in the channel or create threads; users only see their own ticket (private-thread membership).
 - Operator scripts: `scripts/setup-ticket-channels.ts`, `scripts/publish-ticket-panel.ts`; pure-logic tests in `scripts/test-tickets.ts`.
 
+**Application Commands** (guild-scoped, upserted on startup; each module registers its own + handles its interactions):
+
+- `/faq` (`lib/faq-command.ts`) — autocomplete search over the web FAQ (question/headline/labels/answer), posts excerpt embed with th.gl + Discord post links; optional `user:` mention.
+- `/suggestion` (`lib/suggestion-command.ts`) — autocomplete over suggestions-issues post titles (active + 200 recent, 5-min cache), links the post; optional `user:` mention.
+- `/updates` (`lib/updates-command.ts`) — latest release notes for a game via `lib/game-updates.ts` (shared with the `/api/updates` route).
+- `/status`, `/version` (`lib/status-commands.ts`) — mirror `www.th.gl/api/status` (existing StatusDocument feed: components, game integrations, incidents) and the canonical versions (`app.th.gl/version.txt` = THGL App auto-updater marker; `/api/build-id` = web sha). Overwolf per-game app versions have NO runtime source (manifests only in the monorepo) — omitted by design.
+- "Create Ticket" message context menu (`lib/ticket-message-command.ts`, staff-only via ManageMessages + role check) — opens/reuses a ticket for the target message's author with the message quoted + linked.
+
 **Spam Guard** (`lib/spam-guard.ts`):
 
 - Reactive delete+ban rules (mod log: `MOD_LOG_CHANNEL_ID`): Rule 1 cross-channel image spam (≥3 images across ≥2 channels/60s), Rule 2 rapid multi-channel posting (≥4 channels/30s), **Rule 0** instant single-message signatures for members joined <7 days (≥3 images with no text, or a bare Discord invite link).
