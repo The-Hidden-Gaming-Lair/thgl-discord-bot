@@ -13,6 +13,9 @@ import { startGamesSyncScheduler } from "./lib/games-sync-scheduler";
 import { registerTicketListeners } from "./lib/ticket-interactions";
 import { startTicketScheduler } from "./lib/ticket-scheduler";
 import { registerFaqCommand } from "./lib/faq-command";
+import { registerTicketMessageCommand } from "./lib/ticket-message-command";
+import { registerSuggestionCommand } from "./lib/suggestion-command";
+import { registerUpdatesCommand } from "./lib/updates-command";
 
 await initDiscord();
 const client = getClient();
@@ -23,6 +26,9 @@ startGamesSyncScheduler();
 registerTicketListeners(client);
 startTicketScheduler();
 registerFaqCommand(client);
+registerTicketMessageCommand(client);
+registerSuggestionCommand(client);
+registerUpdatesCommand(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
