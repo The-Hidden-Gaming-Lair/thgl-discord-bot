@@ -322,7 +322,7 @@ function buildTicketEmbed(input: TicketInput): EmbedBuilder {
   return embed;
 }
 
-function buildCloseRow(): ActionRowBuilder<ButtonBuilder> {
+export function buildCloseRow(): ActionRowBuilder<ButtonBuilder> {
   return new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(TICKET_BUTTON_CLOSE)
@@ -386,6 +386,7 @@ async function doOpenTicket(input: TicketInput): Promise<OpenTicketResult> {
     await existing.send({
       content: `<@${input.userId}>`,
       embeds: [buildTicketEmbed(input)],
+      components: [buildCloseRow()],
     });
     await logTicketEvent("Appended", {
       userId: input.userId,

@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  EmbedBuilder,
   Events,
   MessageFlags,
   ModalBuilder,
@@ -14,6 +15,7 @@ import { TICKET_CHANNEL_ID, TICKET_STAFF_ROLE_ID } from "./channels";
 import {
   archiveTicketThread,
   buildClosedEmbed,
+  buildCloseRow,
   consumeBotUnarchive,
   forgetTicketThread,
   isTicketThread,
@@ -168,13 +170,22 @@ export function registerTicketListeners(client: Client) {
       }
       // A user message auto-unarchived a closed ticket (or staff unarchived
       // it manually) — reopen it and notify the team (unless the reply came
-      // from staff; pings are back per owner decision 2026-08-29).
+      // from staff; pings are back per owner decision 2026-08-29). The
+      // message always carries a fresh Close button so nobody has to scroll
+      // for one.
       const latest = (await newThread.messages.fetch({ limit: 1 })).first();
       const isStaff =
         latest?.member?.roles.cache.has(TICKET_STAFF_ROLE_ID) ?? false;
-      if (latest && !latest.author.bot && !isStaff) {
-        await newThread.send({ content: `<@&${TICKET_STAFF_ROLE_ID}>` });
-      }
+      const pingStaff = Boolean(latest && !latest.author.bot && !isStaff);
+      await newThread.send({
+        content: pingStaff ? `<@&${TICKET_STAFF_ROLE_ID}>` : undefined,
+        embeds: [
+          new EmbedBuilder()
+            .setDescription("🔓 Ticket reopened by reply.")
+            .setColor(0x57f287),
+        ],
+        components: [buildCloseRow()],
+      });
       await logTicketEvent("Reopened", {
         userId: latest?.author.id,
         threadId: newThread.id,
