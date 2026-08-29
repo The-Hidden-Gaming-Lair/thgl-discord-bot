@@ -3,9 +3,12 @@ import {
   computeInactivityAction,
   deriveActivity,
   formatTicketMarker,
+  gameColor,
   isWarningMessage,
+  matchGameSlug,
   parseTicketMarker,
   ticketThreadName,
+  TICKET_DEFAULT_COLOR,
   TICKET_WARNING_FOOTER,
 } from "../lib/tickets";
 
@@ -108,5 +111,24 @@ assert.deepEqual(
   ),
   { lastActivityMs: 42, warned: true },
 );
+
+// --- game colors (staff idea 2026-08-29: color-code embeds per game) ---
+assert.equal(gameColor(undefined), TICKET_DEFAULT_COLOR);
+assert.equal(gameColor("  "), TICKET_DEFAULT_COLOR);
+// different spellings of the same game map to the same slug -> same color
+assert.equal(matchGameSlug("Palia"), matchGameSlug("palia map"));
+assert.notEqual(matchGameSlug("Palia"), null);
+assert.equal(gameColor("Palia"), gameColor("palia map"));
+// distinct games get distinct colors (specific pair pinned)
+assert.notEqual(gameColor("Palia"), gameColor("Avowed"));
+// unmatched free text still yields a stable non-default color
+assert.equal(gameColor("Some Unknown Game"), gameColor("some unknown game"));
+// colors are valid 24-bit RGB ints
+for (const text of ["Palia", "Avowed", "Some Unknown Game"]) {
+  const color = gameColor(text);
+  assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
+}
+// overly short/generic input never matches a game
+assert.equal(matchGameSlug("a"), null);
 
 console.log("All ticket helper tests passed ✔");

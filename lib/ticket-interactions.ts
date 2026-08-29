@@ -10,7 +10,7 @@ import {
   type Interaction,
   type ModalSubmitInteraction,
 } from "discord.js";
-import { TICKET_CHANNEL_ID } from "./channels";
+import { TICKET_CHANNEL_ID, TICKET_STAFF_ROLE_ID } from "./channels";
 import {
   archiveTicketThread,
   buildClosedEmbed,
@@ -167,8 +167,14 @@ export function registerTicketListeners(client: Client) {
         return; // panel reopen; openTicket already handles messages + log
       }
       // A user message auto-unarchived a closed ticket (or staff unarchived
-      // it manually) — reopen it.
+      // it manually) — reopen it and notify the team (unless the reply came
+      // from staff; pings are back per owner decision 2026-08-29).
       const latest = (await newThread.messages.fetch({ limit: 1 })).first();
+      const isStaff =
+        latest?.member?.roles.cache.has(TICKET_STAFF_ROLE_ID) ?? false;
+      if (latest && !latest.author.bot && !isStaff) {
+        await newThread.send({ content: `<@&${TICKET_STAFF_ROLE_ID}>` });
+      }
       await logTicketEvent("Reopened", {
         userId: latest?.author.id,
         threadId: newThread.id,

@@ -313,23 +313,6 @@ export const TICKET_STAFF_ROLE_ID = "1173945621963604069";
 export const TICKET_CHANNEL_ID = process.env.TICKET_CHANNEL_ID ?? "";
 // Staff-only channel receiving one embed per ticket event. Empty = logging off.
 export const TICKET_LOG_CHANNEL_ID = process.env.TICKET_LOG_CHANNEL_ID ?? "";
-// Staff members silently added to every ticket thread. Env override:
-// TICKET_STAFF_USER_IDS="id1,id2". Each id is re-verified against the live
-// guild (must still hold TICKET_STAFF_ROLE_ID) before being added, so a stale
-// entry can never join a ticket. An explicit list is used because enumerating
-// role members needs the GuildMembers privileged intent, which requires
-// Discord verification review at this bot's scale.
-export const TICKET_STAFF_USER_IDS: string[] = process.env.TICKET_STAFF_USER_IDS
-  ? process.env.TICKET_STAFF_USER_IDS.split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-  : [
-      "311400587445141504", // devleon
-      "197529782672424960", // winderine
-      "763566602124918804", // mangogamr
-      "394481834592829441", // .uthar
-      "139320165614616577", // .hava.
-      "513093031830880257", // borys21
-      "325404820347420672", // airakokosuki
-      "102498939755827200", // daleth
-    ];
+// NOTE: the TICKET_STAFF_USER_IDS silent-add list was removed 2026-08-29 —
+// one-by-one thread.members.add pings staff anyway, so the plain staff-role
+// mention (one API call, same effect) is used again.

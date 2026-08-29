@@ -157,7 +157,6 @@ private thread per user in the panel channel; OPEN ⇔ thread not archived.
 | --- | --- | --- |
 | `TICKET_CHANNEL_ID` | Text channel with the panel + private ticket threads. Empty = ticket system off. | _(empty)_ |
 | `TICKET_LOG_CHANNEL_ID` | Staff-only channel for ticket event embeds. Empty = logging off. | _(empty)_ |
-| `TICKET_STAFF_USER_IDS` | Comma-separated staff user ids silently added to each ticket thread (each re-verified to hold the staff role). | baked-in list in `lib/channels.ts` |
 | `TICKET_SCHEDULER_ENABLED` | `false` disables the inactivity scheduler. | `true` |
 | `TICKET_SCHEDULER_INTERVAL_MS` | Maintenance scan interval. | `21600000` (6 h) |
 | `TICKET_WARN_AFTER_MS` | Inactivity before the warning message. | `432000000` (5 d) |
