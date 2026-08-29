@@ -12,6 +12,7 @@ import { startFaqSyncScheduler } from "./lib/faq-scheduler";
 import { startGamesSyncScheduler } from "./lib/games-sync-scheduler";
 import { registerTicketListeners } from "./lib/ticket-interactions";
 import { startTicketScheduler } from "./lib/ticket-scheduler";
+import { registerFaqCommand } from "./lib/faq-command";
 
 await initDiscord();
 const client = getClient();
@@ -21,6 +22,7 @@ startFaqSyncScheduler();
 startGamesSyncScheduler();
 registerTicketListeners(client);
 startTicketScheduler();
+registerFaqCommand(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,

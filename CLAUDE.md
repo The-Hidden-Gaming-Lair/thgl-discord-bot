@@ -50,6 +50,7 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - `syncFaq({ applyDeletes })` creates/updates one **bot-authored** thread per web entry (bot must author them to edit on resync), matching existing threads by the canonical `th.gl/faq/{id}` link embedded in the starter message. Long answers are truncated to Discord's 2000-char limit with a link to the full page.
 - FAQ `labels` map to forum tag **names** (`LABEL_TO_TAG_NAME`, fallback `THGL`), resolved to tag IDs at runtime.
 - Deletions (legacy non-bot threads + orphaned bot threads) only happen when `applyDeletes` is true. The scheduler (`startFaqSyncScheduler`) runs additively by default; see README env vars.
+- **`/faq` slash command** (`lib/faq-command.ts`, the bot's only application command, guild-scoped, registered on startup): autocomplete search over the web FAQ (question/headline/labels/answer), posts an answer-excerpt embed with the th.gl link + Discord forum post link (resolved via the same `th.gl/faq/{id}` starter-message marker the sync uses); optional `user:` param mentions someone. Available to everyone.
 
 **Games Sync** (`lib/games-feed.ts`, `lib/game-resolver.ts`, `lib/games-provision.ts`, `lib/games-sync-scheduler.ts`):
 

@@ -78,7 +78,7 @@ export type FaqSyncReport = {
   actions: FaqSyncAction[];
 };
 
-async function fetchFaqFeed(): Promise<FaqFeed> {
+export async function fetchFaqFeed(): Promise<FaqFeed> {
   const res = await fetch(FAQ_API_URL, {
     headers: { "user-agent": "thgl-discord-bot/faq-sync" },
   });
@@ -100,7 +100,7 @@ function webUrl(baseUrl: string, id: string) {
  * Rewrite root-relative markdown links (e.g. `(/support-me)`) to absolute
  * th.gl URLs so they work inside Discord.
  */
-function absolutizeLinks(markdown: string): string {
+export function absolutizeLinks(markdown: string): string {
   return markdown.replace(/\]\((\/[^)]*)\)/g, "](https://www.th.gl$1)");
 }
 
@@ -227,7 +227,7 @@ async function reconcileForumTags(
  * may contain inline links to *other* /faq/ pages, so match the LAST one, not
  * the first (matching the first swaps identities between cross-linked entries).
  */
-function parseFaqId(content: string): string | null {
+export function parseFaqId(content: string): string | null {
   const matches = [...content.matchAll(/th\.gl\/faq\/([a-z0-9-]+)/gi)];
   return matches.length ? matches[matches.length - 1][1] : null;
 }
