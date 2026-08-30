@@ -77,6 +77,16 @@ function trackMessage(message: Message) {
     if (hasRole) return;
   }
 
+  if (flaggedUsers.has(message.author.id)) {
+    // The user is being (or just was) banned — this message slipped in while
+    // the ban was in flight. Discord's deleteMessageSeconds purge can miss
+    // messages committed in the same instant (confirmed 2026-08-30: the
+    // recurring "one leftover message" staff removed by hand), so delete it
+    // ourselves; the gateway still delivers it to us.
+    void message.delete().catch(() => {});
+    return;
+  }
+
   if (message.channelId === TRAP_CHANNEL_ID) {
     void handleTrapMessage(message);
     return;
@@ -104,6 +114,59 @@ function trackMessage(message: Message) {
   userMessages.set(message.author.id, existing);
 
   checkRules(message.author.id, message.author.tag, message.client);
+}
+
+// --- Scoreboard: pinned counter embed in the trap channel ---
+
+const TRAP_COUNTER_FOOTER = "thgl:trap:counter";
+// Serialize increments so two near-simultaneous bans don't race the
+// read-modify-write on the counter message.
+let counterQueue: Promise<void> = Promise.resolve();
+
+function buildCounterEmbed(total: number, trapped: number): EmbedBuilder {
+  return new EmbedBuilder()
+    .setTitle("🛡️ Spam Guard Scoreboard")
+    .addFields(
+      { name: "Spammers banned", value: String(total), inline: true },
+      { name: "🪤 Caught by this trap", value: String(trapped), inline: true },
+    )
+    .setColor(0x57f287)
+    .setFooter({ text: TRAP_COUNTER_FOOTER })
+    .setTimestamp();
+}
+
+function parseCounterField(message: Message, name: string): number {
+  const value = message.embeds[0]?.fields.find((f) => f.name.includes(name))?.value;
+  return Number.parseInt(value ?? "0", 10) || 0;
+}
+
+export function bumpSpamCounter(client: Client, trapped: boolean) {
+  counterQueue = counterQueue.then(async () => {
+    try {
+      const channel = client.channels.cache.get(TRAP_CHANNEL_ID) as
+        | TextChannel
+        | undefined;
+      if (!channel) return;
+      const recent = await channel.messages.fetch({ limit: 30 });
+      const counter = recent.find(
+        (m) =>
+          m.author.id === client.user?.id &&
+          m.embeds[0]?.footer?.text === TRAP_COUNTER_FOOTER,
+      );
+      const total = (counter ? parseCounterField(counter, "banned") : 0) + 1;
+      const trappedCount =
+        (counter ? parseCounterField(counter, "trap") : 0) + (trapped ? 1 : 0);
+      const embed = buildCounterEmbed(total, trappedCount);
+      if (counter) {
+        await counter.edit({ embeds: [embed] });
+      } else {
+        const created = await channel.send({ embeds: [embed] });
+        await created.pin().catch(() => {});
+      }
+    } catch (err) {
+      console.log(`[SpamGuard] counter update failed: ${err}`);
+    }
+  });
 }
 
 function toTrackedMessage(message: Message): TrackedMessage {
@@ -349,6 +412,7 @@ async function handleDetection(
           reason: `[SpamGuard] ${rule}`,
           deleteMessageSeconds: 60 * 60,
         });
+        bumpSpamCounter(client, rule === "Honeypot");
       } catch (err) {
         console.log(`[SpamGuard] Failed to ban ${userId}: ${err}`);
       }
