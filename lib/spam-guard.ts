@@ -339,10 +339,16 @@ async function handleDetection(
       })
     );
 
-    // Ban user
+    // Ban user. deleteMessageSeconds purges the user's recent messages
+    // SERVER-SIDE — this catches the in-flight message that lands while we
+    // are deleting/banning (it was posted before the ban propagated and our
+    // per-message delete loop never saw it; staff had to remove those by hand).
     if (guild) {
       try {
-        await guild.members.ban(userId, { reason: `[SpamGuard] ${rule}` });
+        await guild.members.ban(userId, {
+          reason: `[SpamGuard] ${rule}`,
+          deleteMessageSeconds: 60 * 60,
+        });
       } catch (err) {
         console.log(`[SpamGuard] Failed to ban ${userId}: ${err}`);
       }
