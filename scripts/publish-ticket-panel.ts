@@ -26,7 +26,8 @@ const embed = new EmbedBuilder()
       "- Do NOT write the same request in multiple channels!\n\n" +
       "If you can't find what you're looking for, click **📩 Open ticket** below — we're here to help!\n" +
       "Your ticket is a private thread that only you and the staff can see. " +
-      "If you close it, you can reopen it later — your history stays.",
+      "If you close it, you can reopen it later — your history stays.\n\n" +
+      "[Privacy Policy](https://www.th.gl/privacy-policy) · [Terms of Service](https://www.th.gl/terms-of-service)",
   )
   .setColor(0x57f287);
 
