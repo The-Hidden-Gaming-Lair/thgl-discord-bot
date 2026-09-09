@@ -175,6 +175,10 @@ export const UPDATES_CHANNELS: {
     id: "", // No dedicated channel - uses central channel only
   },
   {
+    name: "heartopia",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
     name: "dragonsword-awakening",
     id: "", // No dedicated channel - uses central channel only
   },

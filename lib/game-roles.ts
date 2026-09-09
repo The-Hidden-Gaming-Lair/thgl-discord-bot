@@ -276,6 +276,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1538991897543049216"],
     titleKeywords: ["soul's remnant", "souls remnant"],
   },
+  {
+    name: "heartopia",
+    channelId: "", // No dedicated updates channel (1522154471906349096 is the discussion channel) - uses central channel only
+    roleIds: ["1522154469561729105"],
+    titleKeywords: ["heartopia"],
+  },
 ];
 
 /**
