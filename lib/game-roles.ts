@@ -264,6 +264,18 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1522154466722320454"],
     titleKeywords: ["neverness to everness", "neverness"],
   },
+  {
+    name: "starrupture",
+    channelId: "", // No dedicated updates channel (1536115443893276710 is the discussion channel) - uses central channel only
+    roleIds: ["1536115442291310722"],
+    titleKeywords: ["starrupture", "star rupture"],
+  },
+  {
+    name: "souls-remnant",
+    channelId: "", // No dedicated updates channel (1538991898893492366 is the discussion channel) - uses central channel only
+    roleIds: ["1538991897543049216"],
+    titleKeywords: ["soul's remnant", "souls remnant"],
+  },
 ];
 
 /**

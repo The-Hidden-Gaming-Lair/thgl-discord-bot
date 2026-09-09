@@ -167,6 +167,14 @@ export const UPDATES_CHANNELS: {
     id: "", // No dedicated channel - uses central channel only
   },
   {
+    name: "starrupture",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "souls-remnant",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
     name: "dragonsword-awakening",
     id: "", // No dedicated channel - uses central channel only
   },
