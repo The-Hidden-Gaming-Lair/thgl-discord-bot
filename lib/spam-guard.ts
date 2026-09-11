@@ -28,6 +28,27 @@ const TRAP_CHANNEL_ID = process.env.TRAP_CHANNEL_ID ?? "1542957161494093909";
 // trap — a confused human typing plain text is deleted + logged, never banned.
 const LINK_RE = /(https?:\/\/\S+|discord\.gg\/\S+|discord(?:app)?\.com\/invite\/\S+)/i;
 
+// Support surfaces where user content is NEVER touched. Legitimate users —
+// often brand-new accounts, which is exactly what Rule 0 targets — post bursts
+// of screenshots and log files here; a ticket thread's screenshots got a real
+// user banned (staff report 2026-09-10). The rules only make sense in the
+// public browsing channels a spam script enumerates.
+// An id may be a channel, a forum, or a whole category; threads and forum
+// posts inherit the exemption from their parent (see isExemptChannel).
+const EXEMPT_CHANNEL_IDS = new Set(
+  [
+    "1092316764081225788", // 📕・support-ticket (panel + private ticket threads)
+    process.env.TICKET_CHANNEL_ID, // whatever the running instance uses
+    "1021543411293106217", // ❕・suggestions-issues (forum + posts)
+    "1173952040137932852", // 🎫 Created Tickets (legacy MEE6 category)
+    "1173952042448990299", // 🎫 Claimed Tickets (legacy MEE6 category)
+    "1173952044097347624", // 🎫 Closed Tickets (legacy MEE6 category)
+    ...(process.env.SPAM_GUARD_EXEMPT_CHANNEL_IDS ?? "").split(","),
+  ]
+    .map((id) => id?.trim())
+    .filter((id): id is string => Boolean(id)),
+);
+
 // Rule 0: instant single-message signatures from recently-joined members
 const RULE0_JOIN_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const RULE0_IMAGE_THRESHOLD = 3;
@@ -64,6 +85,24 @@ const flaggedUsers = new Set<string>();
 
 // --- Core ---
 
+/**
+ * True when the message sits in an exempt channel, in a thread/forum post of
+ * one, or anywhere under an exempt category. Walks up two levels: thread →
+ * parent channel → category.
+ */
+function isExemptChannel(message: Message): boolean {
+  const channel = message.channel;
+  if (EXEMPT_CHANNEL_IDS.has(channel.id)) return true;
+
+  const parentId = "parentId" in channel ? channel.parentId : null;
+  if (!parentId) return false;
+  if (EXEMPT_CHANNEL_IDS.has(parentId)) return true;
+
+  const parent = message.client.channels.cache.get(parentId);
+  const categoryId = parent && "parentId" in parent ? parent.parentId : null;
+  return categoryId ? EXEMPT_CHANNEL_IDS.has(categoryId) : false;
+}
+
 function trackMessage(message: Message) {
   if (!message.guild) return;
   // Bots (including this one) and safe/staff roles are excluded BEFORE any
@@ -76,6 +115,10 @@ function trackMessage(message: Message) {
     );
     if (hasRole) return;
   }
+
+  // Support channels are excluded before the flagged-user sweep too: a user
+  // wrongly flagged elsewhere must not lose their ticket screenshots.
+  if (isExemptChannel(message)) return;
 
   if (flaggedUsers.has(message.author.id)) {
     // The user is being (or just was) banned — this message slipped in while
@@ -448,6 +491,6 @@ export function setupSpamGuard(client: Client) {
   setInterval(cleanup, CLEANUP_INTERVAL_MS);
 
   console.log(
-    `[SpamGuard] Initialized (mode: ${SPAM_GUARD_MODE}, safe roles: ${SAFE_ROLE_IDS.length})`
+    `[SpamGuard] Initialized (mode: ${SPAM_GUARD_MODE}, safe roles: ${SAFE_ROLE_IDS.length}, exempt channels: ${EXEMPT_CHANNEL_IDS.size})`
   );
 }
