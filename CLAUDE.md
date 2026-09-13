@@ -2,6 +2,27 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Cross-repo agent rules (canonical in data-forge)
+
+Two THGL-wide workflows are version-controlled in the data-forge repo, not duplicated here.
+Read the file when the situation applies — they hold the rules, this is only the pointer:
+
+- **A bare Discord channel/thread id in a message, "read the channel", a reporter by handle** →
+  `D:\dev\data-forge\.claude\skills\discord-bug-feed\SKILL.md`. The channel is the bug feed:
+  number every report, triage against git history, reproduce before diagnosing. **You can post as
+  the bot from this repo** — `bun D:\dev\data-forge\scripts\discord-post.mjs <threadId> <file>
+  --mention <userId> --dry-run` (run it from `D:\dev\data-forge`); the `discord` /
+  `discord-cdp` MCPs are read-only, which is not the same as "cannot reply".
+- **Anything about to leave the working tree** — commit, push, `sync:bunny`, a deploy, a release,
+  release notes, a Discord post → `D:\dev\data-forge\.claude\skills\ship-and-announce\SKILL.md`.
+  It owns the order per repo, who may ship without asking, and what counts as served.
+
+**The trap in this repo:** "the repo script" in the bug-feed workflow means data-forge's
+`scripts/discord-post.mjs`, not a script here — it just reads this repo's `.env` for
+`DISCORD_TOKEN`. Bot replies to reporters are fine once a fix is verified live; an app-updates
+announcement always needs Leon's explicit go.
+
+
 ## Commands
 
 ### Development
