@@ -182,6 +182,30 @@ export const UPDATES_CHANNELS: {
     name: "dragonsword-awakening",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "enshrouded",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "planet-crafter",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "legend-of-khiimori",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "sinking-city-2",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "where-winds-meet",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "blood-of-dawnwalker",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {

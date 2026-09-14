@@ -282,6 +282,42 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1522154469561729105"],
     titleKeywords: ["heartopia"],
   },
+  {
+    name: "enshrouded",
+    channelId: "", // No dedicated updates channel (1532823751593300092 is the discussion channel) - uses central channel only
+    roleIds: ["1532823750179819801"],
+    titleKeywords: ["enshrouded"],
+  },
+  {
+    name: "planet-crafter",
+    channelId: "", // No dedicated updates channel (1536817570462834719 is the discussion channel) - uses central channel only
+    roleIds: ["1536817569124847626"],
+    titleKeywords: ["planet crafter"],
+  },
+  {
+    name: "legend-of-khiimori",
+    channelId: "", // No dedicated updates channel (1537051612537815161 is the discussion channel) - uses central channel only
+    roleIds: ["1537051611325661284"],
+    titleKeywords: ["legend of khiimori", "khiimori"],
+  },
+  {
+    name: "sinking-city-2",
+    channelId: "", // No dedicated updates channel (1543328094050328747 is the discussion channel) - uses central channel only
+    roleIds: ["1543328092582584370"],
+    titleKeywords: ["sinking city 2", "sinking city ii", "sinking city"],
+  },
+  {
+    name: "where-winds-meet",
+    channelId: "", // No dedicated updates channel (1546593885701279827 is the discussion channel) - uses central channel only
+    roleIds: ["1546593882026807496"],
+    titleKeywords: ["where winds meet"],
+  },
+  {
+    name: "blood-of-dawnwalker",
+    channelId: "", // No dedicated updates channel (1548798149655658547 is the discussion channel) - uses central channel only
+    roleIds: ["1548798148766335107"],
+    titleKeywords: ["blood of dawnwalker", "dawnwalker"],
+  },
 ];
 
 /**
