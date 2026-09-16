@@ -259,6 +259,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     titleKeywords: ["witchspire"],
   },
   {
+    name: "aniimo",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1549852125956407387"],
+    titleKeywords: ["aniimo"],
+  },
+  {
     name: "neverness-to-everness",
     channelId: "", // No dedicated channel - uses central channel only
     roleIds: ["1522154466722320454"],
