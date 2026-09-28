@@ -60,8 +60,8 @@ const server = Bun.serve({
     if (url.pathname.startsWith("/api/roles")) {
       return handleRoles(req, url);
     }
-    if (url.pathname.startsWith("/api/game-requests/sync")) {
-      return handleGameRequests(req);
+    if (url.pathname.startsWith("/api/game-requests")) {
+      return handleGameRequests(req, url);
     }
     if (url.pathname.startsWith("/api/games/sync")) {
       return handleGamesSync(req, url);

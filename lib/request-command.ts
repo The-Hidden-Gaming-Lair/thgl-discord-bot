@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 import {
   fetchGames,
+  postInThread,
   requestGame,
   searchGames,
   syncGameRequests,
@@ -68,13 +69,35 @@ async function handleAutocomplete(interaction: AutocompleteInteraction) {
   );
 }
 
-async function threadLink(gameId: string): Promise<string | null> {
+async function threadIdFor(gameId: string): Promise<string | null> {
   const game = (await fetchGames()).find((g) => g.id === gameId);
-  return game?.discordThreadId ? `<#${game.discordThreadId}>` : null;
+  return game?.discordThreadId ?? null;
+}
+
+async function threadLink(gameId: string): Promise<string | null> {
+  const id = await threadIdFor(gameId);
+  return id ? `<#${id}>` : null;
+}
+
+/** Post the optional /request details into the game's thread. */
+async function postDetails(
+  gameId: string,
+  userId: string,
+  details: string | null,
+  created: boolean,
+) {
+  if (!details) return;
+  const id = await threadIdFor(gameId);
+  if (!id) return;
+  await postInThread(
+    id,
+    `${created ? "📝 Requested by" : "💬"} <@${userId}>:\n${details}`,
+  );
 }
 
 async function handleCommand(interaction: ChatInputCommandInteraction) {
   const input = interaction.options.getString("game", true).trim();
+  const details = interaction.options.getString("details")?.trim() || null;
   // Autocomplete picks send the Steam app id; free text falls back to the
   // best search hit.
   let appId = /^\d+$/.test(input) ? Number(input) : null;
@@ -107,8 +130,12 @@ async function handleCommand(interaction: ChatInputCommandInteraction) {
         `That game was already reviewed and won't get support for now: ${SITE_URL}/stats/${tracked.id}`,
       );
     } else {
+      await postDetails(tracked.id, interaction.user.id, details, false).catch(
+        () => undefined,
+      );
       await interaction.editReply(
-        `That game is already requested. Vote with 👍 on ${link ?? "its post in #game-requests"} or at ${SITE_URL}/requests`,
+        `That game is already requested. Vote with 👍 on ${link ?? "its post in #game-requests"} or at ${SITE_URL}/requests.` +
+          (details ? " Your details were added to the post." : ""),
       );
     }
     return;
@@ -116,6 +143,9 @@ async function handleCommand(interaction: ChatInputCommandInteraction) {
 
   const result = await requestGame(appId, interaction.user.id);
   if (!result.created) {
+    await postDetails(result.id, interaction.user.id, details, false).catch(
+      () => undefined,
+    );
     const link = await threadLink(result.id);
     await interaction.editReply(
       `**${result.title}** is already on the list. Vote with 👍 on ${link ?? "its post in #game-requests"}.`,
@@ -124,9 +154,13 @@ async function handleCommand(interaction: ChatInputCommandInteraction) {
   }
   // Create the thread now instead of waiting for the next scheduled run.
   await syncGameRequests(result.id).catch(() => undefined);
+  await postDetails(result.id, interaction.user.id, details, true).catch(
+    () => undefined,
+  );
   const link = await threadLink(result.id);
   await interaction.editReply(
-    `Thanks! **${result.title}** is now requested: ${link ?? `${SITE_URL}/stats/${result.id}`}. Your vote is counted; others can vote with 👍 on the post.`,
+    `Thanks! **${result.title}** is now requested: ${link ?? `${SITE_URL}/stats/${result.id}`}. Your vote is counted; others can vote with 👍 on the post.` +
+      (details ? "" : " Add what the map or app should cover as a reply there."),
   );
 }
 
@@ -154,6 +188,14 @@ export function registerRequestCommand(client: Client) {
           description: "Search Steam for the game",
           required: true,
           autocomplete: true,
+        },
+        {
+          type: ApplicationCommandOptionType.String,
+          name: "details",
+          description:
+            "What should the map or app cover? Features, locations, useful links",
+          required: false,
+          max_length: 1000,
         },
       ],
     })

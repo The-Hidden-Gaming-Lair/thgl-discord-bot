@@ -123,6 +123,41 @@ export async function fetchGames(): Promise<StatsGame[]> {
   return (await statsApi<{ games: StatsGame[] }>("GET")).games;
 }
 
+type WebComment = {
+  id: string;
+  gameId: string;
+  authorName: string;
+  body: string;
+};
+
+async function fetchUnpostedComments(): Promise<WebComment[]> {
+  const res = await fetch(`${STATS_API_URL}/discord?comments=unposted`, {
+    headers: botHeaders(),
+  });
+  if (!res.ok) throw new Error(`stats API responded ${res.status}`);
+  return ((await res.json()) as { comments: WebComment[] }).comments;
+}
+
+function clip(text: string, max: number) {
+  return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
+}
+
+/**
+ * Post in a game's thread on behalf of someone (web comment or /request
+ * details). Mentions render as names but never ping.
+ */
+export async function postInThread(threadId: string, content: string) {
+  const thread = await getClient().channels.fetch(threadId);
+  if (!thread?.isThread()) throw new Error(`thread ${threadId} not found`);
+  if (thread.archived) {
+    await thread.setArchived(false, "Game requests: new comment");
+  }
+  return thread.send({
+    content: clip(content, 2000),
+    allowedMentions: { parse: [] },
+  });
+}
+
 export type RequestResult = {
   id: string;
   title: string;
@@ -234,6 +269,7 @@ function statusMessage(game: StatsGame): string | null {
 
 export type GameRequestsSyncReport = {
   games: number;
+  comments: number;
   created: number;
   updated: number;
   statusPosts: number;
@@ -359,11 +395,45 @@ async function syncOne(
   report.updated++;
 }
 
+/** Mirror comments written on th.gl into their game's thread. */
+async function mirrorWebComments(
+  games: StatsGame[],
+  report: GameRequestsSyncReport,
+) {
+  const threadByGame = new Map(
+    games
+      .filter((g) => g.discordThreadId)
+      .map((g) => [g.id, g.discordThreadId!] as const),
+  );
+  for (const comment of await fetchUnpostedComments()) {
+    const threadId = threadByGame.get(comment.gameId);
+    if (!threadId) continue; // thread not created yet; next run
+    try {
+      const message = await postInThread(
+        threadId,
+        `💬 **${comment.authorName}** on th.gl:\n${clip(comment.body, 1900)}`,
+      );
+      await statsApi("POST", {
+        action: "comment-posted",
+        commentId: comment.id,
+        messageId: message.id,
+      });
+      report.comments++;
+    } catch (error: any) {
+      report.errors.push({
+        gameId: comment.gameId,
+        error: error?.message ?? String(error),
+      });
+    }
+  }
+}
+
 async function runSync(onlyGameId?: string): Promise<GameRequestsSyncReport> {
   const [games, managed] = await Promise.all([fetchGames(), loadManagedThreads()]);
   const forum = getForumChannel(GAME_REQUESTS_CHANNEL.id) as ForumChannel;
   const report: GameRequestsSyncReport = {
     games: games.length,
+    comments: 0,
     created: 0,
     updated: 0,
     statusPosts: 0,
@@ -378,6 +448,7 @@ async function runSync(onlyGameId?: string): Promise<GameRequestsSyncReport> {
       report.errors.push({ gameId: game.id, error: error?.message ?? String(error) });
     }
   }
+  if (!onlyGameId) await mirrorWebComments(games, report);
   return report;
 }
 
@@ -406,6 +477,7 @@ export function syncGameRequests(onlyGameId?: string): Promise<GameRequestsSyncR
       lastError = null;
       console.log(
         `[game-requests] ${onlyGameId ?? "all"}: ${report.created} created, ` +
+          `${report.comments} web comments, ` +
           `${report.updated} updated, ${report.statusPosts} status posts, ` +
           `${report.voteUpdates} vote changes, ${report.errors.length} errors`,
       );
