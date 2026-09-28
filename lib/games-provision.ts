@@ -15,7 +15,13 @@ import { resolveRoleId } from "./game-resolver";
 
 let reconcileInFlight = false;
 
-const APPS_AND_GAMES_CATEGORY = "Apps & Games";
+export const APPS_AND_GAMES_CATEGORY = "Apps & Games";
+/** Second game category: lib/channel-rebalance.ts moves quiet game channels
+ *  here (and back when they pick up again) so "Apps & Games" stays under
+ *  Discord's 50-channels-per-category limit and shows the active chats. */
+export const MORE_GAMES_CATEGORY = "More Games";
+/** Discord's hard limit of channels per category. */
+export const CATEGORY_CHANNEL_LIMIT = 50;
 
 const GAME_ONBOARDING_PROMPT_ID = "1100586372844228610";
 const ONBOARDING_OPTION_SOFT_CAP = 50;
@@ -26,8 +32,8 @@ const ONBOARDING_PIN_TOP_TITLES = ["Coding/Development", "THGL Companion App"];
 
 // Channels pinned to the top/bottom of "Apps & Games" when sorting (the rest
 // of the game channels sort alphabetically between them).
-const CHANNEL_PIN_TOP = "thgl-companion-app";
-const CHANNEL_PIN_BOTTOM = "other-games";
+export const CHANNEL_PIN_TOP = "thgl-companion-app";
+export const CHANNEL_PIN_BOTTOM = "other-games";
 
 /** GuildText channels under "Apps & Games" that are NOT game discussion
  *  channels for one of the canonical games (companion apps, trackers, tools),
@@ -59,7 +65,7 @@ const CHANNEL_ALIASES: Record<string, string> = {
 };
 
 // Discord stores channel names lowercased with spaces -> hyphens.
-const channelKey = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
+export const channelKey = (name: string) => name.toLowerCase().replace(/\s+/g, "-");
 
 /** The channel-name key a game's discussion channel is expected under: the
  *  legacy alias if one exists, otherwise the canonical discordId. */
@@ -107,6 +113,10 @@ export async function reconcileGames(
   const category = [...guild.channels.cache.values()].find(
     (c: Channel) => c.type === ChannelType.GuildCategory && c.name === APPS_AND_GAMES_CATEGORY,
   ) as CategoryChannel;
+  const moreGames = [...guild.channels.cache.values()].find(
+    (c: Channel) => c.type === ChannelType.GuildCategory && c.name === MORE_GAMES_CATEGORY,
+  ) as CategoryChannel | undefined;
+  const gameCategoryIds = new Set([category.id, ...(moreGames ? [moreGames.id] : [])]);
   if (!category) throw new Error(`Category "${APPS_AND_GAMES_CATEGORY}" not found`);
 
   const textChannelByName = new Map<string, TextChannel>();
@@ -146,14 +156,19 @@ export async function reconcileGames(
       }
     }
     // Discussion channel under Apps & Games. Existing channel may be under a
-    // legacy alias name; only a game with NO channel (by alias or discordId)
-    // gets a new #<discordId> channel.
+    // legacy alias name (or already moved to More Games); only a game with NO
+    // channel (by alias or discordId) gets a new #<discordId> channel. New
+    // games always start visible in Apps & Games (the rebalancer's grace
+    // period keeps them there); only if it is full do they land in More Games.
     if (!textChannelByName.has(expectedChannelKey(game.discordId))) {
       if (apply) {
+        const activeFull =
+          [...guild.channels.cache.values()].filter((c) => c.parentId === category.id)
+            .length >= CATEGORY_CHANNEL_LIMIT;
         const ch = await guild.channels.create({
           name: channelKey(game.discordId),
           type: ChannelType.GuildText,
-          parent: category.id,
+          parent: activeFull && moreGames ? moreGames.id : category.id,
         });
         textChannelByName.set(channelKey(game.discordId), ch);
         result.channelsCreated.push(game.discordId);
@@ -164,7 +179,7 @@ export async function reconcileGames(
     }
   }
 
-  // Orphans (report only): GuildText channels under the category whose name is
+  // Orphans (report only): GuildText channels under either game category whose name is
   // not a canonical discordId and not in the non-game allow-list.
   // Asymmetry: roles are intentionally NOT orphan-reported or deleted (they
   // have non-game uses and deletes are out of scope); only channels are
@@ -172,7 +187,8 @@ export async function reconcileGames(
   const canonical = new Set(games.map((g) => expectedChannelKey(g.discordId)));
   for (const c of guild.channels.cache.values()) {
     if (
-      c.parentId === category.id &&
+      c.parentId !== null &&
+      gameCategoryIds.has(c.parentId) &&
       c.type === ChannelType.GuildText &&
       !canonical.has(channelKey(c.name)) &&
       !NON_GAME_CHANNELS.has(channelKey(c.name))
@@ -198,7 +214,7 @@ export async function reconcileGames(
  * discussion channels A-Z, then #other-games last. Positions only — never
  * adds/removes a channel (aborts if the child count wouldn't be preserved).
  */
-async function sortAppsAndGamesChannels(guild: Guild, category: CategoryChannel) {
+export async function sortAppsAndGamesChannels(guild: Guild, category: CategoryChannel) {
   await guild.channels.fetch();
   const kids = [...guild.channels.cache.values()].filter(
     (c) => c.parentId === category.id,

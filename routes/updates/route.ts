@@ -27,16 +27,18 @@ export async function handleUpdates(req: Request, url: URL) {
     let centralMessages: any[] = [];
 
     // Try to get messages from dedicated channel if it exists
-    try {
-      getChannel(channel.id);
-      dedicatedMessages = await getMessages(channel.id);
-      console.log(
-        `[Updates] Found ${dedicatedMessages.length} messages in dedicated channel for ${channel.name}`
-      );
-    } catch (error) {
-      console.log(
-        `[Updates] Dedicated channel ${channel.name} not accessible`
-      );
+    if (channel.id) {
+      try {
+        getChannel(channel.id);
+        dedicatedMessages = await getMessages(channel.id);
+        console.log(
+          `[Updates] Found ${dedicatedMessages.length} messages in dedicated channel for ${channel.name}`
+        );
+      } catch (error) {
+        console.log(
+          `[Updates] Dedicated channel ${channel.name} not accessible`
+        );
+      }
     }
 
     // Always check central app-updates channel for latest updates with role mentions

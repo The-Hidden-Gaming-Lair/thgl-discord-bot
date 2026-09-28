@@ -33,7 +33,7 @@ export const GAME_CONFIGS: GameConfig[] = [
   },
   {
     name: "aeternum-map",
-    channelId: "896014490808745994",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1105201503582568508"],
     titleKeywords: ["aeternum map", "new world map"],
   },
@@ -44,35 +44,35 @@ export const GAME_CONFIGS: GameConfig[] = [
   },
   {
     name: "diablo4",
-    channelId: "1114136338036441201",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1114134751767445514"],
     titleKeywords: ["diablo 4", "diablo iv"],
   },
   {
     name: "palia",
-    channelId: "1148606632494895145",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1148611968874332160"],
     titleKeywords: ["palia"],
   },
   {
     name: "palia-tracker",
-    channelId: "1151592050995773520",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     titleKeywords: ["palia tracker"],
   },
   {
     name: "diablo4-companion",
-    channelId: "1124004157007867924",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     titleKeywords: ["diablo 4 companion", "diablo iv companion"],
   },
   {
     name: "new-world-companion",
-    channelId: "1105189246769311774",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1105201503582568508"],
     titleKeywords: ["new world companion"],
   },
   {
     name: "sons-of-the-forest-map",
-    channelId: "1086576689745772554",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1086575333890850858"],
     titleKeywords: ["sons of the forest"],
   },
@@ -88,36 +88,36 @@ export const GAME_CONFIGS: GameConfig[] = [
   },
   {
     name: "songs-of-conquest",
-    channelId: "976935814900645939",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["976933955196579860"],
     titleKeywords: ["songs of conquest"],
   },
   {
     name: "hogwarts-legacy-map",
-    channelId: "1064862000150237264",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1064862519606382623"],
     titleKeywords: ["hogwarts legacy"],
   },
   {
     name: "skeleton",
-    channelId: "918959476734824468",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     titleKeywords: ["skeleton"],
   },
   {
     name: "palworld",
-    channelId: "1198571864755277895",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1198570762399912017"],
     titleKeywords: ["palworld"],
   },
   {
     name: "once-human",
-    channelId: "1196793877458321458",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1196793465925816340"],
     titleKeywords: ["once human"],
   },
   {
     name: "night-crows",
-    channelId: "1217421560386818088",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1217420268751028314"],
     titleKeywords: ["night crows"],
   },
@@ -128,37 +128,37 @@ export const GAME_CONFIGS: GameConfig[] = [
   },
   {
     name: "pax-dei",
-    channelId: "1234393071299596309",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1234393960185724978"],
     titleKeywords: ["pax dei"],
   },
   {
     name: "wuthering-waves",
-    channelId: "1247540622835974257",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1247541675430248588"],
     titleKeywords: ["wuthering waves"],
   },
   {
     name: "satisfactory",
-    channelId: "1302557334446407700",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1302556864596283453"],
     titleKeywords: ["satisfactory"],
   },
   {
     name: "infinity-nikki",
-    channelId: "1313829928856322048",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1313828748113739827"],
     titleKeywords: ["infinity nikki"],
   },
   {
     name: "avowed",
-    channelId: "1339985812430917706",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1339986247115870278"],
     titleKeywords: ["avowed"],
   },
   {
     name: "dune-awakening",
-    channelId: "1376831284411629629",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1376831895501017099"],
     titleKeywords: ["dune: awakening", "dune awakening"],
   },
@@ -176,19 +176,19 @@ export const GAME_CONFIGS: GameConfig[] = [
   },
   {
     name: "soulframe",
-    channelId: "1400750444720029726",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1400750833381019698"],
     titleKeywords: ["soulframe"],
   },
   {
     name: "grounded2",
-    channelId: "1400751543573282876",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1400751086968639490"],
     titleKeywords: ["grounded 2", "grounded ii"],
   },
   {
     name: "blue-protocol-star-resonance",
-    channelId: "1425525855509151824",
+    channelId: "", // #updates-* channel deleted 2026-09-28 - central channel only
     roleIds: ["1425524646723321890"],
     titleKeywords: ["blue protocol: star resonance", "blue protocol star resonance"],
   },

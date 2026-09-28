@@ -12,7 +12,7 @@ export const UPDATES_CHANNELS: {
   },
   {
     name: "aeternum-map",
-    id: "896014490808745994",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "aeternum-tracker",
@@ -20,27 +20,27 @@ export const UPDATES_CHANNELS: {
   },
   {
     name: "diablo4",
-    id: "1114136338036441201",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "palia",
-    id: "1148606632494895145",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "palia-tracker",
-    id: "1151592050995773520",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "diablo4-companion",
-    id: "1124004157007867924",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "new-world-companion",
-    id: "1105189246769311774",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "sons-of-the-forest-map",
-    id: "1086576689745772554",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "arkesia-map",
@@ -52,27 +52,27 @@ export const UPDATES_CHANNELS: {
   },
   {
     name: "songs-of-conquest",
-    id: "976935814900645939",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "hogwarts-legacy-map",
-    id: "1064862000150237264",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "skeleton",
-    id: "918959476734824468",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "palworld",
-    id: "1198571864755277895",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "once-human",
-    id: "1196793877458321458",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "night-crows",
-    id: "1217421560386818088",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "seekers-of-skyveil",
@@ -80,27 +80,27 @@ export const UPDATES_CHANNELS: {
   },
   {
     name: "pax-dei",
-    id: "1234393071299596309",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "wuthering-waves",
-    id: "1247540622835974257",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "satisfactory",
-    id: "1302557334446407700",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "infinity-nikki",
-    id: "1313829928856322048",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "avowed",
-    id: "1339985812430917706",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "dune-awakening",
-    id: "1376831284411629629",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "chrono-odyssey",
@@ -108,15 +108,15 @@ export const UPDATES_CHANNELS: {
   },
   {
     name: "soulframe",
-    id: "1400750444720029726",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "grounded2",
-    id: "1400751543573282876",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "blue-protocol-star-resonance",
-    id: "1425525855509151824",
+    id: "", // #updates-* channel deleted 2026-09-28 - central channel only
   },
   {
     name: "duet-night-abyss",

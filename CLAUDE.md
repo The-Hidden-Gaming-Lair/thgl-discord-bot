@@ -40,7 +40,7 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - **Main Server**: HTTP server on Bun.serve exposing `/api/updates`, `/api/info`, `/api/suggestions-issues`, `/api/roles`, `/api/faq/sync`, `/api/games/sync`, `/api/game-requests/sync`
 - **Discord Integration**: Uses discord.js with GuildMessages and MessageContent intents to fetch channel messages and role mentions
 - **Canonical games source**: `https://www.th.gl/api/games` (the web monorepo's `@repo/lib` games array) is the single source of truth for which games exist. The hardcoded lists in `lib/channels.ts` / `lib/game-roles.ts` are a **fallback cache**, not the source — new games need NO edits here; the games sync provisions Discord automatically (see Games Sync below).
-- **Centralized Updates**: All game updates flow through the central app-updates channel (ID: 1166078913756270702); per-game `#updates-*` channels are deprecated
+- **Centralized Updates**: All game updates flow through the central app-updates channel (ID: 1166078913756270702); the per-game `#updates-*` channels were deleted 2026-09-28
 
 ### Key Components
 
@@ -88,6 +88,14 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - `reconcileGames({ apply })` provisions per game: role (named by title), discussion channel `#<discordId>` under "Apps & Games" (legacy names recognized via `CHANNEL_ALIASES` — owner chose aliases over renaming), guild emoji (matched by name or uploaded from the feed's `logo` URL), and an onboarding option (role + channel + emoji) in prompt `1100586372844228610`. Channels and onboarding options re-sort after creates (pinned specials, then A–Z).
 - **Additive-only, guarded**: never deletes/renames anything; the onboarding full-replace PUT maps Discord's nested `emoji` objects to flat `emoji_id`/`emoji_name` (the PUT ignores nested objects — this once wiped all option emojis) and aborts if any existing option or emoji would be dropped. Orphan channels are report-only. `runReconcileGames` is the concurrency-guarded wrapper the route/scheduler use.
 - Scheduler env: `GAMES_SYNC_ENABLED`, `GAMES_SYNC_INTERVAL_MS` (default 30 min), `GAMES_SYNC_APPLY` (default false = dry-run). Apply needs Discord perms: Manage Roles, Manage Channels, Manage Server (onboarding), Create Expressions (emoji upload).
+
+**Channel Rebalance** (`lib/channel-rebalance.ts`, `lib/channel-rebalance-scheduler.ts`, `scripts/rebalance-channels.ts`):
+
+- Discord caps a category at 50 channels, so game discussion channels live in TWO categories: "Apps & Games" (active) and "More Games" (quiet). A daily job moves channels between them by activity — human messages in the last 30 days: demote below 2, promote at 5+ (gap = no flapping). Channels younger than 60 days always stay in Apps & Games (new games are quiet but should be visible at launch). `#thgl-companion-app`, `#other-games` and non-text channels never move; Apps & Games is capped at 48.
+- A move only changes the parent (`setParent(..., { lockPermissions: false })`): channel id, history, per-channel overwrites (most game channels have their own) and the onboarding option (references the channel id) stay intact. Each applied run with moves posts a report to `CHANNEL_REBALANCE_LOG_CHANNEL_ID` (default `MOD_LOG_CHANNEL_ID` = #bot-log).
+- `reconcileGames` treats both categories as game categories (orphan report, alias lookup is guild-wide) and creates new channels in Apps & Games (More Games only if Apps & Games is full).
+- Env: `CHANNEL_REBALANCE_ENABLED` (default on), `CHANNEL_REBALANCE_INTERVAL_MS` (default 24 h), `CHANNEL_REBALANCE_APPLY` (default false = dry-run; production sets `true` in the server docker-compose — never in a local `.env`). Operator: `bun scripts/rebalance-channels.ts` (dry-run) / `--apply --force`.
+- First run 2026-09-28: 20 channels moved to More Games; the per-game `#updates-*` channels and the "Deprecated" category were deleted the same day (the app-updates cache now holds the channel's full history so quiet games keep their last update).
 
 **Ticket System** (`lib/tickets.ts`, `lib/ticket-interactions.ts`, `lib/ticket-scheduler.ts`):
 
