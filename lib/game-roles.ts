@@ -319,6 +319,18 @@ export const GAME_CONFIGS: GameConfig[] = [
     titleKeywords: ["where winds meet"],
   },
   {
+    name: "welcome-to-elderfield",
+    channelId: "", // No dedicated updates channel (1554202328427532338 is the discussion channel) - uses central channel only
+    roleIds: ["1554079987622092882"],
+    titleKeywords: ["welcome to elderfield", "elderfield"],
+  },
+  {
+    name: "delta-force",
+    channelId: "", // No dedicated updates channel (1554202330809765948 is the discussion channel) - uses central channel only
+    roleIds: ["1554202329211736115"],
+    titleKeywords: ["delta force"],
+  },
+  {
     name: "blood-of-dawnwalker",
     channelId: "", // No dedicated updates channel (1548798149655658547 is the discussion channel) - uses central channel only
     roleIds: ["1548798148766335107"],
