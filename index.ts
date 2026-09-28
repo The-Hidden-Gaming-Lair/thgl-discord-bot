@@ -7,9 +7,12 @@ import { handleMcpApi } from "./routes/mcp-api/route";
 import { handleFaq } from "./routes/faq/route";
 import { handleRoles } from "./routes/roles/route";
 import { handleGamesSync } from "./routes/games-sync/route";
+import { handleGameRequests } from "./routes/game-requests/route";
 import { setupSpamGuard } from "./lib/spam-guard";
 import { startFaqSyncScheduler } from "./lib/faq-scheduler";
 import { startGamesSyncScheduler } from "./lib/games-sync-scheduler";
+import { startGameRequestsSyncScheduler } from "./lib/game-requests-scheduler";
+import { registerRequestCommand } from "./lib/request-command";
 import { registerTicketListeners } from "./lib/ticket-interactions";
 import { startTicketScheduler } from "./lib/ticket-scheduler";
 import { registerFaqCommand } from "./lib/faq-command";
@@ -24,6 +27,7 @@ console.log(`Ready! Logged in as ${client.user.tag}`);
 setupSpamGuard(client);
 startFaqSyncScheduler();
 startGamesSyncScheduler();
+startGameRequestsSyncScheduler();
 registerTicketListeners(client);
 startTicketScheduler();
 registerFaqCommand(client);
@@ -31,6 +35,7 @@ registerTicketMessageCommand(client);
 registerSuggestionCommand(client);
 registerUpdatesCommand(client);
 registerStatusCommands(client);
+registerRequestCommand(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
@@ -54,6 +59,9 @@ const server = Bun.serve({
     }
     if (url.pathname.startsWith("/api/roles")) {
       return handleRoles(req, url);
+    }
+    if (url.pathname.startsWith("/api/game-requests/sync")) {
+      return handleGameRequests(req);
     }
     if (url.pathname.startsWith("/api/games/sync")) {
       return handleGamesSync(req, url);

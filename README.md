@@ -139,6 +139,46 @@ legacy/orphan threads), *Manage Messages* (to edit starter messages), and
 *Manage Channels* (to create the web-label tags on the forum). Without Manage
 Channels the sync still runs; it just logs that it couldn't create tags.
 
+### Game requests sync (#game-requests)
+
+www.th.gl/requests is the single source of truth for requested games, their
+status and votes (Bunny DB behind `https://www.th.gl/api/stats/*`). The bot
+mirrors it into the **#game-requests** forum (`lib/game-requests.ts`):
+
+- one bot-authored thread per requested / watching / in-progress game, matched
+  by the `th.gl/stats/<id>` link in its starter post; the thread id is sent
+  back so the website links to it
+- the status is the thread's moderated forum tag (Requested, Watching,
+  In progress, Supported, Declined); a status change posts a short message in
+  the thread; declined threads are locked and archived
+- 👍 reactors on the starter post are the game's Discord votes (stored as
+  `discord:<user id>`), read via REST on every run, so no reaction intent is
+  needed
+- `/request` (`lib/request-command.ts`) searches Steam with autocomplete,
+  creates the request and its thread right away, or points to the existing
+  thread; games not on Steam go through the website form
+
+**Trigger**
+
+```
+GET  /api/game-requests/sync   # status of the last/current run
+POST /api/game-requests/sync   # start a run (header x-sync-secret: $STATS_BOT_SECRET)
+```
+
+**Environment**
+
+| Variable                         | Default                        | Purpose                                                    |
+| -------------------------------- | ------------------------------ | ---------------------------------------------------------- |
+| `STATS_BOT_SECRET`               | _(unset: sync + /request off)_ | Bearer secret for `/api/stats/discord` on games-web (same value there). |
+| `STATS_API_URL`                  | `https://www.th.gl/api/stats`  | Website stats API base.                                    |
+| `GAME_REQUESTS_SYNC_ENABLED`     | on (when the secret is set)    | Set `false` to disable the scheduler.                      |
+| `GAME_REQUESTS_SYNC_INTERVAL_MS` | `600000` (10 min)              | Scheduler poll interval.                                   |
+
+**Discord permissions** in #game-requests (set as a member override): view,
+create posts, send in threads, manage threads, manage channel, manage
+messages, embed links, attach files, add reactions, read history. Members may
+reply and react but not create posts.
+
 **First migration**
 
 1. `POST /api/faq/sync` — creates bot threads and prints the legacy posts it

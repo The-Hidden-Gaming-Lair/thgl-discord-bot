@@ -213,6 +213,16 @@ export const SUGGESTIONS_ISSUES_CHANNEL = {
   id: "1021543411293106217",
 };
 
+// Forum channel mirrored from www.th.gl/requests (lib/game-requests.ts): one
+// bot-authored thread per requested / watched / in-progress game, status as
+// a moderated tag, 👍 reactions on the starter post count as votes on the web.
+// Members can reply and react but not open posts; requests go through the web
+// or /request.
+export const GAME_REQUESTS_CHANNEL = {
+  name: "game-requests",
+  id: "1554083192846164008",
+};
+
 // Forum channel mirrored from the web FAQ (faq-entries.ts on www.th.gl).
 // Threads here are created/updated/removed by the web→Discord FAQ sync
 // (lib/faq.ts). The web is the single source of truth.

@@ -37,7 +37,7 @@ announcement always needs Leon's explicit go.
 
 This Discord bot exposes API endpoints for THGL Discord channel content and reconciles Discord against canonical web feeds:
 
-- **Main Server**: HTTP server on Bun.serve exposing `/api/updates`, `/api/info`, `/api/suggestions-issues`, `/api/roles`, `/api/faq/sync`, `/api/games/sync`
+- **Main Server**: HTTP server on Bun.serve exposing `/api/updates`, `/api/info`, `/api/suggestions-issues`, `/api/roles`, `/api/faq/sync`, `/api/games/sync`, `/api/game-requests/sync`
 - **Discord Integration**: Uses discord.js with GuildMessages and MessageContent intents to fetch channel messages and role mentions
 - **Canonical games source**: `https://www.th.gl/api/games` (the web monorepo's `@repo/lib` games array) is the single source of truth for which games exist. The hardcoded lists in `lib/channels.ts` / `lib/game-roles.ts` are a **fallback cache**, not the source — new games need NO edits here; the games sync provisions Discord automatically (see Games Sync below).
 - **Centralized Updates**: All game updates flow through the central app-updates channel (ID: 1166078913756270702); per-game `#updates-*` channels are deprecated
@@ -72,6 +72,13 @@ This Discord bot exposes API endpoints for THGL Discord channel content and reco
 - FAQ `labels` map to forum tag **names** (`LABEL_TO_TAG_NAME`, fallback `THGL`), resolved to tag IDs at runtime.
 - Deletions (legacy non-bot threads + orphaned bot threads) only happen when `applyDeletes` is true. The scheduler (`startFaqSyncScheduler`) runs additively by default; see README env vars.
 - **`/faq` slash command** (`lib/faq-command.ts`, the bot's only application command, guild-scoped, registered on startup): autocomplete search over the web FAQ (question/headline/labels/answer), posts an answer-excerpt embed with the th.gl link + Discord forum post link (resolved via the same `th.gl/faq/{id}` starter-message marker the sync uses); optional `user:` param mentions someone. Available to everyone.
+
+**Game Requests Sync** (`lib/game-requests.ts`, `lib/game-requests-scheduler.ts`, `lib/request-command.ts`):
+
+- www.th.gl/requests (games-web `/api/stats/*`, Bunny DB) is the single source of truth; the bot mirrors requested / watching / in-progress games into the #game-requests forum (`GAME_REQUESTS_CHANNEL`), one bot-authored thread each, matched by the `th.gl/stats/<id>` starter link. Status = moderated forum tag; a status change posts in the thread; declined threads get locked + archived.
+- 👍 reactors on each starter post are pushed as the game's Discord votes (`POST /api/stats/discord {action:"votes"}`, users stored as `discord:<id>`; the /request requester keeps their vote). Read via REST every run (10 min), so no reaction intent/partials.
+- `/request` (guild command): Steam search autocomplete via `/api/stats/search`; creates the request (`action:"request"`) and runs a single-game sync so the thread exists before replying. Runs are serialized (no duplicate threads).
+- Needs `STATS_BOT_SECRET` (same value as on the games-web Magic Container); without it the scheduler and /request stay off.
 
 **Games Sync** (`lib/games-feed.ts`, `lib/game-resolver.ts`, `lib/games-provision.ts`, `lib/games-sync-scheduler.ts`):
 
