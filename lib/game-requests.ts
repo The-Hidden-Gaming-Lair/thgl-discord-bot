@@ -24,6 +24,9 @@ import { getClient, getForumChannel, getForumPosts } from "./discord";
  * - 👍 reactors on the starter post are reported as the game's Discord votes
  *   (read via REST on every run, so no reaction intent is needed and votes
  *   made while the bot was down are picked up on the next run)
+ * - comments written on th.gl are posted into the thread; deleting one on
+ *   th.gl removes the Discord copy, deleting the copy in Discord hides it
+ *   on th.gl (syncCommentDeletions)
  *
  * Env: STATS_BOT_SECRET (required), STATS_API_URL (default
  * https://www.th.gl/api/stats).
@@ -128,15 +131,22 @@ type WebComment = {
   gameId: string;
   authorName: string;
   body: string;
+  discordMessageId: string | null;
 };
 
-async function fetchUnpostedComments(): Promise<WebComment[]> {
-  const res = await fetch(`${STATS_API_URL}/discord?comments=unposted`, {
+async function fetchComments(
+  which: "unposted" | "mirrored" | "deleted",
+): Promise<WebComment[]> {
+  const res = await fetch(`${STATS_API_URL}/discord?comments=${which}`, {
     headers: botHeaders(),
   });
   if (!res.ok) throw new Error(`stats API responded ${res.status}`);
   return ((await res.json()) as { comments: WebComment[] }).comments;
 }
+
+// Discord API error codes: the message / channel no longer exists.
+const UNKNOWN_MESSAGE = 10008;
+const UNKNOWN_CHANNEL = 10003;
 
 function clip(text: string, max: number) {
   return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text;
@@ -270,6 +280,7 @@ function statusMessage(game: StatsGame): string | null {
 export type GameRequestsSyncReport = {
   games: number;
   comments: number;
+  commentsRemoved: number;
   created: number;
   updated: number;
   statusPosts: number;
@@ -395,6 +406,67 @@ async function syncOne(
   report.updated++;
 }
 
+/**
+ * Keep deletions in step between th.gl comments and their Discord copies:
+ * - deleted on th.gl (author/admin) → delete the Discord copy
+ * - Discord copy deleted (moderator, or the thread is gone) → hide the
+ *   comment on th.gl too
+ * Only a definite "unknown message/channel" counts as deleted; any other
+ * error leaves the comment alone until the next run.
+ */
+async function syncCommentDeletions(report: GameRequestsSyncReport) {
+  const client = getClient();
+  const unmirror = (commentId: string, deleted: boolean) =>
+    statsApi("POST", { action: "comment-unmirrored", commentId, deleted });
+
+  for (const comment of await fetchComments("deleted")) {
+    const threadId = await threadIdForGame(comment.gameId);
+    try {
+      const thread = threadId ? await client.channels.fetch(threadId) : null;
+      if (thread?.isThread()) {
+        await thread.messages.delete(comment.discordMessageId!);
+      }
+      await unmirror(comment.id, true);
+      report.commentsRemoved++;
+    } catch (error: any) {
+      if (error?.code === UNKNOWN_MESSAGE || error?.code === UNKNOWN_CHANNEL) {
+        await unmirror(comment.id, true);
+        report.commentsRemoved++;
+      } else {
+        report.errors.push({
+          gameId: comment.gameId,
+          error: `delete copy: ${error?.message ?? error}`,
+        });
+      }
+    }
+  }
+
+  for (const comment of await fetchComments("mirrored")) {
+    const threadId = await threadIdForGame(comment.gameId);
+    if (!threadId) continue;
+    try {
+      const thread = await client.channels.fetch(threadId);
+      if (!thread?.isThread()) continue;
+      await thread.messages.fetch({ message: comment.discordMessageId!, force: true });
+    } catch (error: any) {
+      if (error?.code === UNKNOWN_MESSAGE || error?.code === UNKNOWN_CHANNEL) {
+        await unmirror(comment.id, true);
+        report.commentsRemoved++;
+      } else {
+        report.errors.push({
+          gameId: comment.gameId,
+          error: `check copy: ${error?.message ?? error}`,
+        });
+      }
+    }
+  }
+}
+
+let threadIdsByGame: Map<string, string> | null = null;
+async function threadIdForGame(gameId: string): Promise<string | null> {
+  return threadIdsByGame?.get(gameId) ?? null;
+}
+
 /** Mirror comments written on th.gl into their game's thread. */
 async function mirrorWebComments(
   games: StatsGame[],
@@ -405,7 +477,7 @@ async function mirrorWebComments(
       .filter((g) => g.discordThreadId)
       .map((g) => [g.id, g.discordThreadId!] as const),
   );
-  for (const comment of await fetchUnpostedComments()) {
+  for (const comment of await fetchComments("unposted")) {
     const threadId = threadByGame.get(comment.gameId);
     if (!threadId) continue; // thread not created yet; next run
     try {
@@ -434,6 +506,7 @@ async function runSync(onlyGameId?: string): Promise<GameRequestsSyncReport> {
   const report: GameRequestsSyncReport = {
     games: games.length,
     comments: 0,
+    commentsRemoved: 0,
     created: 0,
     updated: 0,
     statusPosts: 0,
@@ -448,7 +521,17 @@ async function runSync(onlyGameId?: string): Promise<GameRequestsSyncReport> {
       report.errors.push({ gameId: game.id, error: error?.message ?? String(error) });
     }
   }
-  if (!onlyGameId) await mirrorWebComments(games, report);
+  if (!onlyGameId) {
+    threadIdsByGame = new Map(
+      games
+        .filter((g) => g.discordThreadId)
+        .map((g) => [g.id, g.discordThreadId!] as const),
+    );
+    await syncCommentDeletions(report).catch((error: any) =>
+      report.errors.push({ gameId: "-", error: `comment deletions: ${error?.message ?? error}` }),
+    );
+    await mirrorWebComments(games, report);
+  }
   return report;
 }
 
@@ -477,7 +560,7 @@ export function syncGameRequests(onlyGameId?: string): Promise<GameRequestsSyncR
       lastError = null;
       console.log(
         `[game-requests] ${onlyGameId ?? "all"}: ${report.created} created, ` +
-          `${report.comments} web comments, ` +
+          `${report.comments} web comments, ${report.commentsRemoved} removed, ` +
           `${report.updated} updated, ${report.statusPosts} status posts, ` +
           `${report.voteUpdates} vote changes, ${report.errors.length} errors`,
       );
