@@ -206,6 +206,18 @@ export const UPDATES_CHANNELS: {
     name: "blood-of-dawnwalker",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "welcome-to-elderfield",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "delta-force",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "graveyard-keeper-2",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {
