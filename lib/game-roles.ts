@@ -336,6 +336,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1548798148766335107"],
     titleKeywords: ["blood of dawnwalker", "dawnwalker"],
   },
+  {
+    name: "graveyard-keeper-2",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1553166467086680217"],
+    titleKeywords: ["graveyard keeper 2", "graveyard keeper"],
+  },
 ];
 
 /**
