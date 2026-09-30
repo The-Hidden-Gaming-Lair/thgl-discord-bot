@@ -21,10 +21,15 @@ export function messageMatchesGame(
   gameName: string,
   candidateRoleIds: string[],
 ): boolean {
-  // Match by role mention (live-resolved role unioned with hardcoded ids)
+  // Match by role mention (live-resolved role unioned with hardcoded ids). A post that doesn't
+  // ping (release notes only ping for new maps/filters/features) still carries `<@&id>` in its
+  // text, but Discord leaves `mentions.roles` empty then - so check the raw content too.
   if (candidateRoleIds.length > 0) {
     const messageRoleIds = Array.from(message.mentions.roles.keys());
-    if (candidateRoleIds.some((id) => messageRoleIds.includes(id))) return true;
+    const raw = message.content ?? "";
+    if (candidateRoleIds.some((id) => messageRoleIds.includes(id) || raw.includes(`<@&${id}>`))) {
+      return true;
+    }
   }
   // Fallback: title keywords (first line is usually the title)
   const gameConfig = getGameConfig(gameName);
