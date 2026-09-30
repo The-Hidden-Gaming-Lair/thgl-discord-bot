@@ -164,6 +164,16 @@ Web→Discord flows: FAQ sync and Games sync. All other routes are Discord→web
 - Uses Bun runtime with TypeScript support enabled
 - Sync env vars (`FAQ_SYNC_*`, `GAMES_SYNC_*`, `GAMES_API_URL`, `FAQ_API_URL`): see the README tables. Production values live in the server's `docker-compose.yml` (host `lol`); `GAMES_SYNC_APPLY=true` + `GAMES_SYNC_SECRET` are set there, so provisioning runs automatically in production
 
+### THGL Inbox sync (`lib/inbox-sync.ts`)
+
+Feeds the api-forge inbox (the one work queue for Leon, Joey and the autonomous agent — see
+api-forge `CLAUDE.md` "THGL Inbox"): #app-debug crash reports → `crash:<Crash ID>`, debug
+snapshots → `snapshot:<messageId>`, support tickets → `ticket:<threadId>` (reporter replies
+count + reopen `needs_info`), suggestions-issues forum → `forum:<threadId>`. Startup backfill of
+open tickets + active forum threads uses `ifNew`. Inert unless `INBOX_TOKEN` (a `bot` actor
+token, created with data-forge `scripts/inbox-actor.ts`) is set — production value only in the
+`lol` docker-compose, like the ticket env (multi-instance rule).
+
 ### Adding a New Game
 
 Add it to the canonical games list in the web monorepo (`packages/lib/src/games.ts` → served at `th.gl/api/games`). That's it — the games sync provisions the Discord role, discussion channel, emoji, and onboarding option automatically (scheduler tick or `POST /api/games/sync?apply=true`). The API slug is the game's `discordId`. Optionally add a fallback entry (with `titleKeywords`) to `lib/game-roles.ts`/`lib/channels.ts` for offline completeness.
