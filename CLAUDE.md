@@ -174,6 +174,12 @@ open tickets + active forum threads uses `ifNew`. Inert unless `INBOX_TOKEN` (a 
 token, created with data-forge `scripts/inbox-actor.ts`) is set — production value only in the
 `lol` docker-compose, like the ticket env (multi-instance rule).
 
+`lib/forum-status.ts` mirrors inbox outcomes back onto the suggestions-issues forum every 30 min
+(policy 2026-09-30): posts are never deleted; closed items get one moderated status tag (Fixed /
+Implemented / Answered / Closed, created on first run) and are archived 3 days after closing if
+nobody replied; a reopened item loses its status tag. Never lock threads - a reply must be able
+to reopen them.
+
 ### Adding a New Game
 
 Add it to the canonical games list in the web monorepo (`packages/lib/src/games.ts` → served at `th.gl/api/games`). That's it — the games sync provisions the Discord role, discussion channel, emoji, and onboarding option automatically (scheduler tick or `POST /api/games/sync?apply=true`). The API slug is the game's `discordId`. Optionally add a fallback entry (with `titleKeywords`) to `lib/game-roles.ts`/`lib/channels.ts` for offline completeness.
