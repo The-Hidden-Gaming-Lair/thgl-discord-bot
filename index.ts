@@ -22,6 +22,7 @@ import { registerSuggestionCommand } from "./lib/suggestion-command";
 import { registerUpdatesCommand } from "./lib/updates-command";
 import { registerStatusCommands } from "./lib/status-commands";
 import { registerInboxSync } from "./lib/inbox-sync";
+import { startForumStatusSync } from "./lib/forum-status";
 
 await initDiscord();
 const client = getClient();
@@ -40,6 +41,7 @@ registerUpdatesCommand(client);
 registerStatusCommands(client);
 registerRequestCommand(client);
 registerInboxSync(client);
+startForumStatusSync(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
