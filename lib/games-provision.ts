@@ -69,7 +69,7 @@ export const channelKey = (name: string) => name.toLowerCase().replace(/\s+/g, "
 
 /** The channel-name key a game's discussion channel is expected under: the
  *  legacy alias if one exists, otherwise the canonical discordId. */
-const expectedChannelKey = (discordId: string) =>
+export const expectedChannelKey = (discordId: string) =>
   channelKey(CHANNEL_ALIASES[discordId] ?? discordId);
 
 export interface ReconcileResult {

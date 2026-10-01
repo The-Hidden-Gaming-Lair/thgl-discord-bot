@@ -178,7 +178,22 @@ token, created with data-forge `scripts/inbox-actor.ts`) is set — production v
 (policy 2026-09-30): posts are never deleted; closed items get one moderated status tag (Fixed /
 Implemented / Answered / Closed, created on first run) and are archived 3 days after closing if
 nobody replied; a reopened item loses its status tag. Never lock threads - a reply must be able
-to reopen them.
+to reopen them. A forum post the bot opened for a player (starter contains `Reported by <@id>`)
+is ingested too, with that player as reporter.
+
+`lib/channel-support.ts` (2026-10-01) watches the game channels ("Apps & Games" / "More Games"):
+member messages that look like help/bug/wish (`looksLikeSupport`, tuned on real messages) plus
+replies to / mentions of the bot are batched per channel, dropped when staff answers them, and
+ingested after 10 quiet minutes as `channel:<channelId>` (source `channel_message`). The agent
+decides what to reply (data-forge `work-inbox/references/game-channel-support.md`).
+
+`lib/inbox-feedback.ts` handles the "Did this solve it?" buttons under agent resolution
+replies (custom_id `ifb:<itemId>:<userId>:<s|n>`, posted by data-forge `discord-post.mjs
+--feedback`, which also appends the question). Both buttons open a written-feedback modal
+(`ifbm:…`); only that user (or staff) can use them. Answers → `POST /inbox/:id/feedback`
+(`solved`/`unsolved` + comment); not solved re-ingests the item's fingerprint (reopens it);
+solved with text ingests `feedback:<itemId>` so the agent learns from it. Modal labels ≤ 45
+chars. Tests: `bun test lib/inbox-support.test.ts`.
 
 ### Adding a New Game
 

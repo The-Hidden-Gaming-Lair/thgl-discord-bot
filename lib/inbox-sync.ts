@@ -29,7 +29,7 @@ export const APP_DEBUG_CHANNEL_ID =
 const INBOX_API_URL = process.env.INBOX_API_URL ?? "https://api-forge.th.gl";
 const INBOX_TOKEN = process.env.INBOX_TOKEN ?? "";
 
-type IngestBody = {
+export type IngestBody = {
   fingerprint: string;
   source: string;
   title: string;
@@ -42,7 +42,29 @@ type IngestBody = {
   ifNew?: boolean;
 };
 
-async function ingest(body: IngestBody): Promise<void> {
+export const inboxEnabled = () => !!INBOX_TOKEN;
+
+/** Bearer call to the inbox API as the bot actor (null when disabled or failed). */
+export async function inboxApi<T = any>(path: string, method = "GET", body?: unknown): Promise<T | null> {
+  if (!INBOX_TOKEN) return null;
+  try {
+    const res = await fetch(`${INBOX_API_URL}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${INBOX_TOKEN}`, "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!res.ok) {
+      console.warn(`[inbox] ${method} ${path} failed: ${res.status} ${await res.text()}`);
+      return null;
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    console.warn(`[inbox] ${method} ${path} failed:`, err);
+    return null;
+  }
+}
+
+export async function ingest(body: IngestBody): Promise<void> {
   if (!INBOX_TOKEN) return;
   try {
     const res = await fetch(`${INBOX_API_URL}/inbox`, {
@@ -188,6 +210,10 @@ function forumBody(thread: AnyThreadChannel, starter: Message | null): IngestBod
   };
 }
 
+/** The player a bot-authored forum post was opened for ("Reported by <@id>" in the starter). */
+export const reportedBy = (content: string) =>
+  content.match(/Reported by <@!?(\d{15,21})>/i)?.[1] ?? null;
+
 const isStaff = (m: Message) =>
   !!TICKET_STAFF_ROLE_ID && (m.member?.roles.cache.has(TICKET_STAFF_ROLE_ID) ?? false);
 
@@ -221,6 +247,16 @@ async function onMessage(m: Message) {
   }
 
   if (thread.parentId === SUGGESTIONS_ISSUES_CHANNEL.id) {
+    // A post the inbox agent opened on a player's behalf (game-channel support): the bot is
+    // the author, the player is named in the starter ("Reported by <@id>").
+    if (m.id === thread.id && m.author.id === m.client.user.id) {
+      const reporter = reportedBy(m.content);
+      if (reporter) {
+        const body = forumBody(thread, m);
+        await ingest({ ...body, data: { ...(body.data as object), userId: reporter } });
+      }
+      return;
+    }
     if (m.author.bot) return;
     if (m.id === thread.id) {
       await ingest(forumBody(thread, m));

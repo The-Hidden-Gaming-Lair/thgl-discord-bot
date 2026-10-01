@@ -23,6 +23,8 @@ import { registerUpdatesCommand } from "./lib/updates-command";
 import { registerStatusCommands } from "./lib/status-commands";
 import { registerInboxSync } from "./lib/inbox-sync";
 import { startForumStatusSync } from "./lib/forum-status";
+import { registerChannelSupport } from "./lib/channel-support";
+import { registerInboxFeedback } from "./lib/inbox-feedback";
 
 await initDiscord();
 const client = getClient();
@@ -42,6 +44,8 @@ registerStatusCommands(client);
 registerRequestCommand(client);
 registerInboxSync(client);
 startForumStatusSync(client);
+registerChannelSupport(client);
+registerInboxFeedback(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
