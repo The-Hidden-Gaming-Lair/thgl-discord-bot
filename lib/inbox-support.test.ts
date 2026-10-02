@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { batchBody, channelScope, looksLikeSupport } from "./channel-support";
-import { feedbackComment, parseFeedbackId } from "./inbox-feedback";
+import { feedbackChannelText, feedbackComment, parseFeedbackId } from "./inbox-feedback";
 import { reportedBy } from "./inbox-sync";
 
 describe("game-channel support detection", () => {
@@ -116,5 +116,23 @@ describe("feedback buttons + agent-opened forum posts", () => {
     expect(reportedBy("Reported by <@123456789012345678> in <#555>:\n> text")).toBe("123456789012345678");
     expect(reportedBy("Reported by <@!123456789012345678>")).toBe("123456789012345678");
     expect(reportedBy("a normal post by a member")).toBeNull();
+  });
+});
+
+describe("#user-feedback channel post", () => {
+  test("quotes both answers, marks empty ones, never exceeds 2000 chars", () => {
+    const text = feedbackChannelText({
+      solved: false,
+      userId: "123456789012345678",
+      itemId: 18,
+      title: "Suggestion: mined-out ore",
+      where: "https://discord.com/channels/1/2/3",
+      first: "still shows\nafter relog",
+      second: "",
+    });
+    expect(text).toContain("❌ **Not solved** from <@123456789012345678> on #18");
+    expect(text).toContain("> still shows\n> after relog");
+    expect(text).toContain("**Could have done better:**\n> (empty)");
+    expect(feedbackChannelText({ solved: true, userId: "1", itemId: 1, title: "t", where: "", first: "x".repeat(3000), second: "" }).length).toBeLessThanOrEqual(2000);
   });
 });

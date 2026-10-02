@@ -32,7 +32,7 @@ import {
   type GuildMember,
   type ModalSubmitInteraction,
 } from "discord.js";
-import { TICKET_STAFF_ROLE_ID } from "./channels";
+import { TICKET_STAFF_ROLE_ID, USER_FEEDBACK_CHANNEL_ID } from "./channels";
 import { inboxApi, inboxEnabled, ingest } from "./inbox-sync";
 
 export type FeedbackIds = { itemId: number; userId: string; solved: boolean };
@@ -49,6 +49,45 @@ export function feedbackComment(solved: boolean, first: string, second: string):
     ? [first && `How was the help: ${first}`, second && `Would like: ${second}`]
     : [first && `Still not working: ${first}`, second && `Could have done better: ${second}`];
   return parts.filter(Boolean).join(" | ");
+}
+
+/** The #user-feedback post for one form answer (staff-only channel). Pure, for tests. */
+export function feedbackChannelText(f: {
+  solved: boolean;
+  userId: string;
+  itemId: number;
+  title: string;
+  where: string;
+  first: string;
+  second: string;
+}): string {
+  const [q1, q2] = f.solved
+    ? ["How was the help", "Would like"]
+    : ["Still not working", "Could have done better"];
+  const quote = (s: string) => (s ? s.split("\n").map((l) => `> ${l}`).join("\n") : "> (empty)");
+  return [
+    `${f.solved ? "✅ **Solved**" : "❌ **Not solved**"} from <@${f.userId}> on #${f.itemId} ${f.title}`.slice(0, 300),
+    f.where && `Reply: ${f.where}`,
+    `**${q1}:**`,
+    quote(f.first),
+    `**${q2}:**`,
+    quote(f.second),
+  ]
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 2000);
+}
+
+async function postToFeedbackChannel(interaction: ModalSubmitInteraction, { text }: { text: string }) {
+  if (!USER_FEEDBACK_CHANNEL_ID) return;
+  try {
+    const channel = await interaction.client.channels.fetch(USER_FEEDBACK_CHANNEL_ID);
+    if (channel?.isSendable()) {
+      await channel.send({ content: text, allowedMentions: { parse: [] } });
+    }
+  } catch (err) {
+    console.error("[inbox-feedback] posting to #user-feedback failed", err);
+  }
 }
 
 /** Cached GuildMember (roles.cache) or the raw API member (roles: string[]). */
@@ -138,6 +177,18 @@ async function handleModal(interaction: ModalSubmitInteraction, ids: FeedbackIds
   }>(`/inbox/${ids.itemId}`);
   if (!rated?.item) return;
   const where = interaction.message?.url ?? "";
+
+  await postToFeedbackChannel(interaction, {
+    text: feedbackChannelText({
+      solved: ids.solved,
+      userId: interaction.user.id,
+      itemId: ids.itemId,
+      title: rated.item.title,
+      where,
+      first,
+      second,
+    }),
+  });
 
   if (!ids.solved) {
     // Reopen the rated item: re-ingesting its fingerprint moves a closed (or needs_info)

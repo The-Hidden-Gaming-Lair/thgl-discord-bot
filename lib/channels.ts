@@ -381,6 +381,10 @@ export const INFO_CHANNELS: {
 // Staff/moderator role: grants ManageThreads visibility on the panel channel
 // and is the role each TICKET_STAFF_USER_IDS entry must hold to be added.
 export const TICKET_STAFF_ROLE_ID = "1173945621963604069";
+// Staff-only text channel (#user-feedback, created 2026-10-02, same overwrites as #app-debug):
+// every "Did this solve it for you?" form answer is posted here so Leon/staff can read what
+// players wrote. Empty = off.
+export const USER_FEEDBACK_CHANNEL_ID = process.env.USER_FEEDBACK_CHANNEL_ID ?? "1555635504949497968";
 // Text channel hosting the ticket panel + private ticket threads.
 // Empty = ticket system inert. Production: 1092316764081225788 (📕・support-ticket),
 // set ONLY in the server docker-compose (multi-instance kill-switch, see CLAUDE.md).
