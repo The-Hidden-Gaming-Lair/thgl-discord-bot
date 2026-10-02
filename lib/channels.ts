@@ -230,6 +230,10 @@ export const UPDATES_CHANNELS: {
     name: "valheim",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "the-first-descendant",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {

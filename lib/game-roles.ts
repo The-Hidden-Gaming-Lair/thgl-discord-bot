@@ -354,6 +354,12 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1555288205266260038"],
     titleKeywords: ["valheim"],
   },
+  {
+    name: "the-first-descendant",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1555519407839518752"],
+    titleKeywords: ["the first descendant", "first descendant"],
+  },
 ];
 
 /**
