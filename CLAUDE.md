@@ -175,9 +175,11 @@ token, created with data-forge `scripts/inbox-actor.ts`) is set — production v
 `lol` docker-compose, like the ticket env (multi-instance rule).
 
 `lib/forum-status.ts` mirrors inbox outcomes back onto the suggestions-issues forum every 30 min
-(policy 2026-09-30): posts are never deleted; closed items get one moderated status tag (Fixed /
-Implemented / Answered / Closed, created on first run) and are archived 3 days after closing if
-nobody replied; a reopened item loses its status tag. Never lock threads - a reply must be able
+(policy 2026-09-30, deletion 2026-10-02): open items are never touched; closed items get one
+moderated status tag (Fixed / Implemented / Answered / Closed, created on first run), are archived
+3 days after closing if nobody replied, and are **deleted 30 days after closing** with no message
+for 30 days (stale workarounds mislead players; the inbox item is the record, the website reads
+the forum live so the post just disappears); a reopened item loses its status tag. Never lock threads - a reply must be able
 to reopen them. A forum post the bot opened for a player (starter contains `Reported by <@id>`)
 is ingested too, with that player as reporter.
 
