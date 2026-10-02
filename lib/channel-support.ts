@@ -5,6 +5,9 @@
 // existing forum post, open a forum post on the player's behalf, point to a private ticket,
 // or stay silent for plain chat.
 //
+//   - Scope: only channels that belong to a THGL game (canonical games feed) plus our own
+//     #thgl-companion-app / #other-games. Channels of other products in the same categories
+//     (#palia-tracker = paliatracker.com, #diablo-iv-companion …) are never answered.
 //   - Candidates: messages from members (not bots / staff) that look like a question, a bug
 //     report or a request (`looksLikeSupport`), plus every reply to the bot and every message
 //     that mentions it (the player is talking to us).
@@ -100,10 +103,30 @@ function isGameChannel(m: Message): m is Message<true> & { channel: TextChannel 
   );
 }
 
-async function appIdFor(channel: TextChannel): Promise<string | null> {
-  const key = channelKey(channel.name);
-  const games = await getCanonicalGames().catch(() => []);
-  return games.find((g) => expectedChannelKey(g.discordId) === key)?.id ?? null;
+/**
+ * THGL's own channels that belong to no single game. Every other watched channel must map to a
+ * THGL game: the game categories also hold channels for OTHER products (#palia-tracker is
+ * paliatracker.com, #diablo-iv-companion is not our Diablo IV map, #new-world-companion), where
+ * an answer about our apps would be wrong (Leon 2026-10-02).
+ */
+const OWN_NON_GAME_CHANNELS = new Set(["thgl-companion-app", "other-games"]);
+
+/**
+ * "skip" for a channel we must not answer in, the game id for a game channel, null for our own
+ * non-game channels. Exported for tests.
+ */
+export function channelScope(
+  channelName: string,
+  games: { id: string; discordId: string }[],
+): string | null | "skip" {
+  const key = channelKey(channelName);
+  if (OWN_NON_GAME_CHANNELS.has(key)) return null;
+  return games.find((g) => expectedChannelKey(g.discordId) === key)?.id ?? "skip";
+}
+
+async function scopeFor(channel: TextChannel): Promise<string | null | "skip"> {
+  // getCanonicalGames falls back to the bundled list when the feed is down.
+  return channelScope(channel.name, await getCanonicalGames().catch(() => []));
 }
 
 /** The ingest body for one flushed batch. Exported for tests. */
@@ -146,7 +169,9 @@ async function flush(channelId: string) {
   pending.delete(channelId);
   if (!batch?.messages.length) return;
   const { channel, messages } = batch;
-  await ingest(batchBody(channel, await appIdFor(channel), messages));
+  const scope = await scopeFor(channel);
+  if (scope === "skip") return;
+  await ingest(batchBody(channel, scope, messages));
   console.log(`[channel-support] #${channel.name}: ${messages.length} message(s) → inbox`);
 }
 
@@ -182,6 +207,8 @@ async function onMessage(m: Message) {
   const repliedUser = m.mentions.repliedUser;
   const toMember = !!repliedUser && !repliedUser.bot && repliedUser.id !== m.author.id;
   if (!toBot && (toMember || !looksLikeSupport(text))) return;
+  // Not ours to answer: another product's channel (#palia-tracker, #diablo-iv-companion …).
+  if ((await scopeFor(m.channel)) === "skip") return;
   if (!text.trim() && !m.attachments.size) return;
 
   const b: Batch = batch ?? { channel: m.channel, messages: [] };

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { batchBody, looksLikeSupport } from "./channel-support";
+import { batchBody, channelScope, looksLikeSupport } from "./channel-support";
 import { feedbackComment, parseFeedbackId } from "./inbox-feedback";
 import { reportedBy } from "./inbox-sync";
 
@@ -26,6 +26,29 @@ describe("game-channel support detection", () => {
     "https://cdn.discordapp.com/attachments/1/2/image.png",
     "<:pog:123456789012345678> <:pog:123456789012345678>",
   ])("chat: %s", (text) => expect(looksLikeSupport(text)).toBe(false));
+});
+
+describe("which channels are ours to answer in", () => {
+  const games = [
+    { id: "palia", discordId: "palia" },
+    { id: "diablo4", discordId: "diablo4" },
+    { id: "aniimo", discordId: "aniimo" },
+  ];
+  test("game channels map to their game (incl. legacy aliases)", () => {
+    expect(channelScope("palia-map", games)).toBe("palia");
+    expect(channelScope("diablo-iv-map", games)).toBe("diablo4");
+    expect(channelScope("aniimo", games)).toBe("aniimo");
+  });
+  test("our own non-game channels are answered without a game", () => {
+    expect(channelScope("thgl-companion-app", games)).toBeNull();
+    expect(channelScope("other-games", games)).toBeNull();
+  });
+  test("other products' channels are never answered", () => {
+    expect(channelScope("palia-tracker", games)).toBe("skip");
+    expect(channelScope("diablo-iv-companion", games)).toBe("skip");
+    expect(channelScope("new-world-companion", games)).toBe("skip");
+    expect(channelScope("palia-map", [])).toBe("skip"); // games feed + fallback both empty: stay quiet
+  });
 });
 
 describe("channel batch → inbox item", () => {
