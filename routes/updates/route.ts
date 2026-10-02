@@ -3,21 +3,25 @@ import { ClientResponse } from "../../lib/http";
 import { getMessages } from "../../lib/messages";
 import { getChannel } from "../../lib/discord";
 import { getMessagesFromCentralChannel } from "../../lib/game-updates";
+import { getUpdatesGameNames } from "../../lib/game-resolver";
 
 export async function handleUpdates(req: Request, url: URL) {
   if (req.method === "GET") {
     const channelName = url.pathname.split("/")[3];
+    // Every canonical game is served (central channel), not only the bundled list, so a new
+    // game's /api/updates/<discordId> works without a code change.
+    const names = await getUpdatesGameNames(UPDATES_CHANNELS.map((c) => c.name));
     if (!channelName) {
-      const channels = UPDATES_CHANNELS.map((channel) => ({
-        name: channel.name,
-        link: `${url}/${channel.name}`,
+      const channels = names.map((name) => ({
+        name,
+        link: `${url}/${name}`,
       }));
       return ClientResponse.json(channels);
     }
 
-    const channel = UPDATES_CHANNELS.find(
-      (channel) => channel.name === channelName
-    );
+    const channel =
+      UPDATES_CHANNELS.find((channel) => channel.name === channelName) ??
+      (names.includes(channelName) ? { name: channelName, id: "" } : undefined);
     if (!channel) {
       return new ClientResponse("Not found", { status: 404 });
     }

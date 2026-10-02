@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import { UPDATES_CHANNELS } from "./channels";
 import { getMessagesFromCentralChannel } from "./game-updates";
+import { getUpdatesGameNames } from "./game-resolver";
 
 /**
  * `/updates` slash command: latest release notes for a game, straight from
@@ -18,9 +19,12 @@ import { getMessagesFromCentralChannel } from "./game-updates";
 const UPDATES_COMMAND = "updates";
 const TEXT_LIMIT = 1500;
 
-function searchGames(query: string): string[] {
+/** Bundled names + every canonical game (a new game needs no code change). */
+const allGames = () => getUpdatesGameNames(UPDATES_CHANNELS.map((c) => c.name));
+
+async function searchGames(query: string): Promise<string[]> {
   const q = query.toLowerCase().trim();
-  const names = UPDATES_CHANNELS.map((c) => c.name);
+  const names = await allGames();
   const matches = q ? names.filter((name) => name.includes(q)) : names;
   return matches.slice(0, 25);
 }
@@ -28,14 +32,14 @@ function searchGames(query: string): string[] {
 async function handleAutocomplete(interaction: AutocompleteInteraction) {
   const query = interaction.options.getFocused();
   await interaction.respond(
-    searchGames(query).map((name) => ({ name, value: name })),
+    (await searchGames(query)).map((name) => ({ name, value: name })),
   );
 }
 
 async function handleCommand(interaction: ChatInputCommandInteraction) {
   const game = interaction.options.getString("game", true);
 
-  if (!UPDATES_CHANNELS.some((c) => c.name === game)) {
+  if (!(await allGames()).includes(game)) {
     await interaction.reply({
       content: `Unknown game "${game.slice(0, 100)}" — pick one from the autocomplete.`,
       flags: MessageFlags.Ephemeral,

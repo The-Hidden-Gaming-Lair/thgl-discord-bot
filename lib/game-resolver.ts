@@ -41,6 +41,32 @@ export async function resolveRoleId(discordId: string): Promise<string | null> {
 }
 
 /**
+ * Every game's primary role: each canonical game (www.th.gl/api/games) with its live guild
+ * role (matched by title, so a role the games-sync just created shows up within the 5-minute
+ * cache), plus GAME_CONFIGS entries that are not canonical games. A new game therefore needs
+ * NO code change here once the reconciler has created its role.
+ */
+export async function getAllGameRoles(): Promise<{ name: string; roleId: string; channelId: string | null }[]> {
+  const out = new Map<string, { name: string; roleId: string; channelId: string | null }>();
+  for (const game of await getCanonicalGames()) {
+    const roleId = await resolveRoleId(game.discordId);
+    if (roleId) out.set(game.discordId, { name: game.discordId, roleId, channelId: getGameConfig(game.discordId)?.channelId || null });
+  }
+  for (const config of GAME_CONFIGS) {
+    if (out.has(config.name) || !config.roleIds?.length) continue;
+    out.set(config.name, { name: config.name, roleId: config.roleIds[0], channelId: config.channelId || null });
+  }
+  return [...out.values()];
+}
+
+/** Names the updates feed answers for: the bundled UPDATES_CHANNELS plus every canonical game. */
+export async function getUpdatesGameNames(staticNames: string[]): Promise<string[]> {
+  const names = new Set(staticNames);
+  for (const game of await getCanonicalGames()) names.add(game.discordId);
+  return [...names];
+}
+
+/**
  * Every Discord role id that stands for a game: the live guild role whose name
  * matches a canonical game title, plus every hardcoded fallback id. Deliberately
  * over-inclusive — it is used to decide whether an account looks like a real

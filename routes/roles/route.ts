@@ -1,16 +1,18 @@
 import { ClientResponse } from "../../lib/http";
-import { GAME_CONFIGS } from "../../lib/game-roles";
+import { getAllGameRoles } from "../../lib/game-resolver";
 
 /**
  * GET /api/roles
  *
- * Exposes the game -> Discord role-ID mapping from lib/game-roles.ts so other
- * tools (e.g. data-forge's scripts/draft-release-notes.ts) can build the
- * `<@&ROLE_ID>` ping mention without hardcoding a copy of the IDs.
+ * Exposes the game -> Discord role-ID mapping so other tools (e.g. data-forge's
+ * scripts/post-release-notes.ts) can build the `<@&ROLE_ID>` ping mention without
+ * hardcoding a copy of the IDs.
  *
  * Returns only games that actually have a role to ping:
  *   [{ name, roleId, channelId }]
- * `roleId` is the first entry of GAME_CONFIGS[].roleIds (the primary role).
+ * Every canonical game resolves its LIVE guild role by title (lib/game-resolver.ts), so a role
+ * the games-sync reconciler just created appears here without a code change; GAME_CONFIGS stays
+ * the fallback for legacy names.
  */
 export async function handleRoles(req: Request, _url: URL) {
   if (req.method === "OPTIONS") {
@@ -20,13 +22,5 @@ export async function handleRoles(req: Request, _url: URL) {
     return new ClientResponse("Method not allowed", { status: 405 });
   }
 
-  const roles = GAME_CONFIGS.filter(
-    (config) => config.roleIds && config.roleIds.length > 0,
-  ).map((config) => ({
-    name: config.name,
-    roleId: config.roleIds![0],
-    channelId: config.channelId || null,
-  }));
-
-  return ClientResponse.json(roles);
+  return ClientResponse.json(await getAllGameRoles());
 }
