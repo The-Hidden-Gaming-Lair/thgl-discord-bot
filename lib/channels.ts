@@ -218,6 +218,18 @@ export const UPDATES_CHANNELS: {
     name: "graveyard-keeper-2",
     id: "", // No dedicated channel - uses central channel only
   },
+  {
+    name: "aniimo",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "aion2",
+    id: "", // No dedicated channel - uses central channel only
+  },
+  {
+    name: "valheim",
+    id: "", // No dedicated channel - uses central channel only
+  },
 ];
 
 export const SUGGESTIONS_ISSUES_CHANNEL = {

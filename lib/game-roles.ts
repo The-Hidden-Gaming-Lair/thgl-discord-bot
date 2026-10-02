@@ -342,6 +342,18 @@ export const GAME_CONFIGS: GameConfig[] = [
     roleIds: ["1553166467086680217"],
     titleKeywords: ["graveyard keeper 2", "graveyard keeper"],
   },
+  {
+    name: "aion2",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1555190058041090068"],
+    titleKeywords: ["aion 2", "aion2"],
+  },
+  {
+    name: "valheim",
+    channelId: "", // No dedicated channel - uses central channel only
+    roleIds: ["1555288205266260038"],
+    titleKeywords: ["valheim"],
+  },
 ];
 
 /**
