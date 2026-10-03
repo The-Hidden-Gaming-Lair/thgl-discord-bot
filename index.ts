@@ -25,6 +25,7 @@ import { registerInboxSync } from "./lib/inbox-sync";
 import { startForumStatusSync } from "./lib/forum-status";
 import { registerChannelSupport } from "./lib/channel-support";
 import { registerInboxFeedback } from "./lib/inbox-feedback";
+import { registerInboxAnswers } from "./lib/inbox-answers";
 
 await initDiscord();
 const client = getClient();
@@ -46,6 +47,7 @@ registerInboxSync(client);
 startForumStatusSync(client);
 registerChannelSupport(client);
 registerInboxFeedback(client);
+registerInboxAnswers(client);
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,

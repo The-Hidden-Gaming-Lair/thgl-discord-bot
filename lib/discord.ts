@@ -2,6 +2,7 @@ import {
   Client,
   Events,
   GatewayIntentBits,
+  Partials,
   ThreadChannel,
   ChannelType,
 } from "discord.js";
@@ -42,10 +43,14 @@ export function initDiscord() {
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        // Not privileged: Leon's 👍/👎 on the bot's questions (lib/inbox-answers.ts).
+        GatewayIntentBits.GuildMessageReactions,
         // NOTE: GuildMembers (privileged) is NOT requested — enabling it needs
         // Discord verification review at this bot's scale. Ticket staff are a
         // configured ID list instead (TICKET_STAFF_USER_IDS, lib/channels.ts).
       ],
+      // Reactions on messages sent before the last restart arrive as partials.
+      partials: [Partials.Message, Partials.Reaction, Partials.User],
     });
     _client.login(process.env.DISCORD_TOKEN);
 
