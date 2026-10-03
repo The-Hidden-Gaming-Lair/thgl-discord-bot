@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { batchBody, channelScope, looksLikeSupport } from "./channel-support";
-import { feedbackChannelText, feedbackComment, parseFeedbackId } from "./inbox-feedback";
+import { FEEDBACK_HEADER, feedbackChannelText, feedbackComment, parseFeedbackId, withFeedbackLine } from "./inbox-feedback";
 import { reportedBy } from "./inbox-sync";
 
 describe("game-channel support detection", () => {
@@ -115,6 +115,28 @@ describe("feedback buttons + agent-opened forum posts", () => {
     expect(feedbackComment(false, "north map marker still missing", "")).toBe(
       "Still not working: north map marker still missing",
     );
+  });
+
+  test("feedback is shown publicly on the reply: one line per person, newest kept, within 2000 chars", () => {
+    const reply = "@DrRomeo There is no Android app...\n\n**Did this solve it for you?** Tap a button below.";
+    const a = withFeedbackLine(reply, { userId: "111111111111111111", solved: true, verified: true, first: "Well the answer I was looking for", second: "" });
+    expect(a).toBe(`${reply}\n\n${FEEDBACK_HEADER}\n-# ✅ Fixed, checked it · <@111111111111111111>: "Well the answer I was looking for"`);
+    // A second person adds a line; the first stays.
+    const b = withFeedbackLine(a, { userId: "222222222222222222", solved: false, first: "still no android\napp", second: "" });
+    expect(b.split("\n").slice(-2)).toEqual([
+      `-# ✅ Fixed, checked it · <@111111111111111111>: "Well the answer I was looking for"`,
+      `-# ❌ Not solved · <@222222222222222222>: "still no android app"`,
+    ]);
+    // The same person answering again replaces their line; no pings or mass mentions leak.
+    const c = withFeedbackLine(b, { userId: "111111111111111111", solved: true, verified: false, first: "@everyone <@333333333333333333> ok", second: "" });
+    expect(c.match(/<@111111111111111111>/g)).toHaveLength(1);
+    expect(c).toContain(`-# 👍 Looks good, not checked yet · <@111111111111111111>: "@​everyone @user ok"`);
+    expect(c.startsWith(reply)).toBe(true);
+    // Long replies: oldest lines give way, never over Discord's limit.
+    let long = "x".repeat(1700);
+    for (let i = 0; i < 10; i++) long = withFeedbackLine(long, { userId: `4444444444444444${10 + i}`, solved: true, first: "y".repeat(300), second: "" });
+    expect(long.length).toBeLessThanOrEqual(2000);
+    expect(long).toContain("<@444444444444444419>");
   });
 
   test("form labels fit Discord's 45-character limit", () => {

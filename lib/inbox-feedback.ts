@@ -14,7 +14,8 @@
 //                      AND the cause of the miss (work-inbox skill §5).
 // A plain written reply in the thread / channel works too: the reply reopens the item and the
 // agent records it as feedback (MCP inbox_feedback_record).
-// Only the person the reply was for (or staff) can use the buttons.
+// ANYONE can use the buttons (several players often share a problem), and every answer is shown
+// publicly on the reply under "Feedback" (withFeedbackLine) - the buttons stay for the next one.
 //
 // Whether they CHECKED the result is tracked too (Leon 2026-10-03): "Fixed - I checked it" (v)
 // vs "Looks good, not checked yet" (u); `s` = the older single "Yes, solved" button (not asked).
@@ -23,8 +24,6 @@
 
 import {
   ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   Events,
   MessageFlags,
   ModalBuilder,
@@ -32,10 +31,9 @@ import {
   TextInputStyle,
   type ButtonInteraction,
   type Client,
-  type GuildMember,
   type ModalSubmitInteraction,
 } from "discord.js";
-import { TICKET_STAFF_ROLE_ID, USER_FEEDBACK_CHANNEL_ID } from "./channels";
+import { USER_FEEDBACK_CHANNEL_ID } from "./channels";
 import { inboxApi, inboxEnabled, ingest } from "./inbox-sync";
 
 export type FeedbackIds = {
@@ -59,6 +57,47 @@ export function parseFeedbackId(customId: string, prefix: "ifb" | "ifbm" = "ifb"
     verified: code === "v" ? true : code === "u" ? false : undefined,
     code,
   };
+}
+
+export const FEEDBACK_HEADER = "**Feedback**";
+const DISCORD_LIMIT = 2000;
+
+/**
+ * Public feedback on the bot's reply (Leon 2026-10-03: feedback was invisible to everyone but the
+ * log, so the agent's "thanks for the feedback" looked like it answered nothing, and staff could
+ * not see it in the channel). Each answer becomes one subtext line under a "Feedback" heading at
+ * the end of the reply; the same person answering again replaces their line. Long comments are
+ * clipped, and the oldest lines give way when the 2000-char limit is reached. Pure, for tests.
+ */
+export function withFeedbackLine(
+  content: string,
+  f: { userId: string; solved: boolean; verified?: boolean; first: string; second: string },
+): string {
+  const verdict = !f.solved
+    ? "❌ Not solved"
+    : f.verified === true
+      ? "✅ Fixed, checked it"
+      : f.verified === false
+        ? "👍 Looks good, not checked yet"
+        : "✅ Solved";
+  const clean = (s: string) =>
+    s.replace(/\s+/g, " ").replace(/@(everyone|here)/gi, "@​$1").replace(/<@[!&]?\d+>/g, "@user").trim();
+  const text = [f.first, f.second].map(clean).filter(Boolean).join(" | ");
+  const quote = text ? `: "${text.length > 160 ? `${text.slice(0, 159)}…` : text}"` : "";
+  const line = `-# ${verdict} · <@${f.userId}>${quote}`;
+
+  const at = content.lastIndexOf(`\n\n${FEEDBACK_HEADER}\n`);
+  const body = at >= 0 ? content.slice(0, at) : content;
+  const lines = at >= 0
+    ? content.slice(at + FEEDBACK_HEADER.length + 3).split("\n").filter((l) => l && !l.includes(`<@${f.userId}>`))
+    : [];
+  lines.push(line);
+  let out = `${body}\n\n${FEEDBACK_HEADER}\n${lines.join("\n")}`;
+  while (out.length > DISCORD_LIMIT && lines.length > 1) {
+    lines.shift();
+    out = `${body}\n\n${FEEDBACK_HEADER}\n${lines.join("\n")}`;
+  }
+  return out.slice(0, DISCORD_LIMIT);
 }
 
 /** One text for the inbox log from the form's answers. Pure, for tests. */
@@ -111,17 +150,6 @@ async function postToFeedbackChannel(interaction: ModalSubmitInteraction, { text
   }
 }
 
-/** Cached GuildMember (roles.cache) or the raw API member (roles: string[]). */
-function isStaff(member: unknown): boolean {
-  if (!TICKET_STAFF_ROLE_ID || !member || typeof member !== "object" || !("roles" in member)) {
-    return false;
-  }
-  const roles = (member as GuildMember | { roles: string[] }).roles;
-  return Array.isArray(roles)
-    ? roles.includes(TICKET_STAFF_ROLE_ID)
-    : !!(roles as GuildMember["roles"])?.cache?.has(TICKET_STAFF_ROLE_ID);
-}
-
 const input = (id: string, label: string, placeholder: string, required: boolean) =>
   new ActionRowBuilder<TextInputBuilder>().addComponents(
     new TextInputBuilder()
@@ -150,24 +178,9 @@ function feedbackModal(ids: FeedbackIds): ModalBuilder {
         );
 }
 
-const thanksRow = (label: string) =>
-  new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId("ifb:done")
-      .setLabel(label)
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(true),
-  );
-
 async function handleButton(interaction: ButtonInteraction, ids: FeedbackIds) {
-  if (interaction.user.id !== ids.userId && !isStaff(interaction.member)) {
-    await interaction.reply({
-      content: `This question was for <@${ids.userId}>. If you have the same problem, write it in a message here and I'll look at it.`,
-      flags: MessageFlags.Ephemeral,
-      allowedMentions: { users: [] },
-    });
-    return;
-  }
+  // Anyone involved may answer (Leon 2026-10-03: "multiple people should be able to send
+  // feedback") - often several players share the same problem.
   await interaction.showModal(feedbackModal(ids));
 }
 
@@ -180,9 +193,21 @@ async function handleModal(interaction: ModalSubmitInteraction, ids: FeedbackIds
     : ids.verified === false
       ? "Thanks! If it doesn't work once you try it, just reply here"
       : "Thanks for your feedback!";
-  // Answer within Discord's 3 s window first, then log.
-  if (interaction.isFromMessage()) {
-    await interaction.update({ components: [thanksRow(label)] });
+  // Answer within Discord's 3 s window first, then log. The answer goes public on the reply
+  // itself (withFeedbackLine) and the buttons STAY, so others can add theirs; the thank-you is
+  // only shown to the person who answered.
+  if (interaction.isFromMessage() && interaction.message) {
+    await interaction.update({
+      content: withFeedbackLine(interaction.message.content, {
+        userId: interaction.user.id,
+        solved: ids.solved,
+        verified: ids.verified,
+        first,
+        second,
+      }),
+      allowedMentions: { parse: [], users: [] },
+    });
+    await interaction.followUp({ content: label, flags: MessageFlags.Ephemeral }).catch(() => {});
   } else {
     await interaction.reply({ content: label, flags: MessageFlags.Ephemeral });
   }
