@@ -89,12 +89,18 @@ describe("channel batch → inbox item", () => {
 
 describe("feedback buttons + agent-opened forum posts", () => {
   test("custom ids", () => {
+    // Older single "Yes, solved" button: verification not asked.
     expect(parseFeedbackId("ifb:42:123456789012345678:s")).toEqual({
       itemId: 42,
       userId: "123456789012345678",
       solved: true,
+      verified: undefined,
+      code: "s",
     });
+    expect(parseFeedbackId("ifb:42:123456789012345678:v")).toMatchObject({ solved: true, verified: true });
+    expect(parseFeedbackId("ifb:42:123456789012345678:u")).toMatchObject({ solved: true, verified: false });
     expect(parseFeedbackId("ifb:42:123456789012345678:n")?.solved).toBe(false);
+    expect(parseFeedbackId("ifb:42:123456789012345678:x")).toBeNull();
     expect(parseFeedbackId("ifbm:42:123456789012345678:n", "ifbm")?.itemId).toBe(42);
     expect(parseFeedbackId("ifbm:42:123456789012345678:n")).toBeNull(); // wrong prefix
     expect(parseFeedbackId("ifb:done")).toBeNull();
@@ -113,10 +119,12 @@ describe("feedback buttons + agent-opened forum posts", () => {
 
   test("form labels fit Discord's 45-character limit", () => {
     const src = readFileSync(join(import.meta.dir, "inbox-feedback.ts"), "utf8");
-    const labels = [...src.matchAll(/input\("\w+", "([^"]+)"/g), ...src.matchAll(/setTitle\("([^"]+)"\)/g)].map(
-      (m) => m[1],
+    // setTitle may pick between titles (verified vs not yet): every quoted string on that line counts.
+    const titles = [...src.matchAll(/setTitle\(([^\n]+)\)/g)].flatMap((m) =>
+      [...m[1].matchAll(/"([^"]+)"/g)].map((q) => q[1]),
     );
-    expect(labels.length).toBe(6);
+    const labels = [...[...src.matchAll(/input\("\w+", "([^"]+)"/g)].map((m) => m[1]), ...titles];
+    expect(labels.length).toBe(7);
     for (const l of labels) expect(l.length).toBeLessThanOrEqual(45);
   });
 
@@ -142,5 +150,8 @@ describe("#user-feedback channel post", () => {
     expect(text).toContain("> still shows\n> after relog");
     expect(text).toContain("**Could have done better:**\n> (empty)");
     expect(feedbackChannelText({ solved: true, userId: "1", itemId: 1, title: "t", where: "", first: "x".repeat(3000), second: "" }).length).toBeLessThanOrEqual(2000);
+    const base = { solved: true, userId: "1", itemId: 7, title: "t", where: "", first: "", second: "" };
+    expect(feedbackChannelText({ ...base, verified: true })).toStartWith("✅ **Solved** (checked it) from");
+    expect(feedbackChannelText({ ...base, verified: false })).toStartWith("✅ **Solved** (not checked yet) from");
   });
 });

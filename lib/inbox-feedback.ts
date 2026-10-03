@@ -16,7 +16,10 @@
 // agent records it as feedback (MCP inbox_feedback_record).
 // Only the person the reply was for (or staff) can use the buttons.
 //
-// custom_id: ifb:<itemId>:<userId>:<s|n>  (button)   ifbm:<itemId>:<userId>:<s|n>  (modal)
+// Whether they CHECKED the result is tracked too (Leon 2026-10-03): "Fixed - I checked it" (v)
+// vs "Looks good, not checked yet" (u); `s` = the older single "Yes, solved" button (not asked).
+//
+// custom_id: ifb:<itemId>:<userId>:<v|u|s|n>  (button)   ifbm:…  (modal)
 
 import {
   ActionRowBuilder,
@@ -35,12 +38,27 @@ import {
 import { TICKET_STAFF_ROLE_ID, USER_FEEDBACK_CHANNEL_ID } from "./channels";
 import { inboxApi, inboxEnabled, ingest } from "./inbox-sync";
 
-export type FeedbackIds = { itemId: number; userId: string; solved: boolean };
+export type FeedbackIds = {
+  itemId: number;
+  userId: string;
+  solved: boolean;
+  /** true = checked it themselves, false = not checked yet, undefined = not asked. */
+  verified?: boolean;
+  code: "v" | "u" | "s" | "n";
+};
 
-/** Parses ifb:<itemId>:<userId>:<s|n> (button) or ifbm:… (modal). Pure, for tests. */
+/** Parses ifb:<itemId>:<userId>:<v|u|s|n> (button) or ifbm:… (modal). Pure, for tests. */
 export function parseFeedbackId(customId: string, prefix: "ifb" | "ifbm" = "ifb"): FeedbackIds | null {
-  const m = customId.match(new RegExp(`^${prefix}:(\\d+):(\\d{15,21}):([sn])$`));
-  return m ? { itemId: Number(m[1]), userId: m[2], solved: m[3] === "s" } : null;
+  const m = customId.match(new RegExp(`^${prefix}:(\\d+):(\\d{15,21}):([vusn])$`));
+  if (!m) return null;
+  const code = m[3] as FeedbackIds["code"];
+  return {
+    itemId: Number(m[1]),
+    userId: m[2],
+    solved: code !== "n",
+    verified: code === "v" ? true : code === "u" ? false : undefined,
+    code,
+  };
 }
 
 /** One text for the inbox log from the form's answers. Pure, for tests. */
@@ -54,6 +72,7 @@ export function feedbackComment(solved: boolean, first: string, second: string):
 /** The #user-feedback post for one form answer (staff-only channel). Pure, for tests. */
 export function feedbackChannelText(f: {
   solved: boolean;
+  verified?: boolean;
   userId: string;
   itemId: number;
   title: string;
@@ -66,7 +85,9 @@ export function feedbackChannelText(f: {
     : ["Still not working", "Could have done better"];
   const quote = (s: string) => (s ? s.split("\n").map((l) => `> ${l}`).join("\n") : "> (empty)");
   return [
-    `${f.solved ? "✅ **Solved**" : "❌ **Not solved**"} from <@${f.userId}> on #${f.itemId} ${f.title}`.slice(0, 300),
+    `${f.solved ? "✅ **Solved**" : "❌ **Not solved**"}${
+      f.verified === true ? " (checked it)" : f.verified === false ? " (not checked yet)" : ""
+    } from <@${f.userId}> on #${f.itemId} ${f.title}`.slice(0, 300),
     f.where && `Reply: ${f.where}`,
     `**${q1}:**`,
     quote(f.first),
@@ -113,12 +134,10 @@ const input = (id: string, label: string, placeholder: string, required: boolean
   );
 
 function feedbackModal(ids: FeedbackIds): ModalBuilder {
-  const modal = new ModalBuilder().setCustomId(
-    `ifbm:${ids.itemId}:${ids.userId}:${ids.solved ? "s" : "n"}`,
-  );
+  const modal = new ModalBuilder().setCustomId(`ifbm:${ids.itemId}:${ids.userId}:${ids.code}`);
   return ids.solved
     ? modal
-        .setTitle("Glad it's solved! Quick feedback")
+        .setTitle(ids.verified === false ? "Thanks! Quick feedback" : "Glad it's solved! Quick feedback")
         .addComponents(
           input("first", "How was the help? What could I do better?", "e.g. quick and clear / the steps were confusing / took too long", false),
           input("second", "Anything else you would like?", "a feature, a missing marker, something that annoys you", false),
@@ -156,9 +175,11 @@ async function handleModal(interaction: ModalSubmitInteraction, ids: FeedbackIds
   const first = interaction.fields.getTextInputValue("first").trim();
   const second = interaction.fields.getTextInputValue("second").trim();
   const comment = feedbackComment(ids.solved, first, second);
-  const label = ids.solved
-    ? "Thanks for your feedback!"
-    : "Thanks, I'll take another look";
+  const label = !ids.solved
+    ? "Thanks, I'll take another look"
+    : ids.verified === false
+      ? "Thanks! If it doesn't work once you try it, just reply here"
+      : "Thanks for your feedback!";
   // Answer within Discord's 3 s window first, then log.
   if (interaction.isFromMessage()) {
     await interaction.update({ components: [thanksRow(label)] });
@@ -171,6 +192,7 @@ async function handleModal(interaction: ModalSubmitInteraction, ids: FeedbackIds
     rating: ids.solved ? "solved" : "unsolved",
     user,
     comment: comment || undefined,
+    verified: ids.verified,
   });
   const rated = await inboxApi<{
     item: { fingerprint: string; source: string; title: string; app_id: string | null };
@@ -181,6 +203,7 @@ async function handleModal(interaction: ModalSubmitInteraction, ids: FeedbackIds
   await postToFeedbackChannel(interaction, {
     text: feedbackChannelText({
       solved: ids.solved,
+      verified: ids.verified,
       userId: interaction.user.id,
       itemId: ids.itemId,
       title: rated.item.title,
@@ -213,8 +236,10 @@ async function handleModal(interaction: ModalSubmitInteraction, ids: FeedbackIds
         `${user} said the issue is solved and wrote feedback on the reply ${where}. ` +
         `Work it with the work-inbox skill, source feedback (section 5).`,
       priority: 1,
-      detail: `Feedback: SOLVED from ${user} (<@${interaction.user.id}>)\n${comment}`,
-      data: { itemId: ids.itemId, userId: interaction.user.id, solved: true },
+      detail: `Feedback: SOLVED${
+        ids.verified === true ? " (checked it)" : ids.verified === false ? " (not checked yet)" : ""
+      } from ${user} (<@${interaction.user.id}>)\n${comment}`,
+      data: { itemId: ids.itemId, userId: interaction.user.id, solved: true, verified: ids.verified },
     });
   }
 }
