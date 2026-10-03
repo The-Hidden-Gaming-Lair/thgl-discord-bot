@@ -15,6 +15,12 @@ describe("game-channel support detection", () => {
     "die Karte funktioniert nicht mehr seit heute",
     "the app crashes when I alt tab",
     "where are the fossil spots on the map",
+    // Missed 2026-10-02 in #wuthering-waves ("missing" without is/are).
+    "new map missing the new collectible Thousandfold Petals (coordinates on lower left 3948 1548 37)",
+    "the markers for the new chests are all missing",
+    "Thousandfold Petals missing from the map",
+    "the new boss is not on the map yet",
+    "there is no marker for the shrine in the new region",
   ])("needs help: %s", (text) => expect(looksLikeSupport(text)).toBe(true));
 
   test.each([
@@ -25,6 +31,8 @@ describe("game-channel support detection", () => {
     "just got my first legendary drop yesterday",
     "https://cdn.discordapp.com/attachments/1/2/image.png",
     "<:pog:123456789012345678> <:pog:123456789012345678>",
+    "missing you all, back from vacation tomorrow",
+    "I was missing one piece for the set but finally got it",
   ])("chat: %s", (text) => expect(looksLikeSupport(text)).toBe(false));
 });
 

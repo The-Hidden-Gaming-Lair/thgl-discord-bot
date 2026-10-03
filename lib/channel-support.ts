@@ -52,6 +52,12 @@ const SUPPORT_WORDS = new RegExp(
     String.raw`\b(bug|bugged|glitch(ed|y)?|broken|crash(es|ed|ing)?\b(?! out)|error|freez(e|es|ing)|stutter(s|ing)?)\b`,
     String.raw`\b(not|isn'?t|aren'?t|doesn'?t|don'?t|won'?t|can'?t|cannot|couldn'?t|never|no longer|stopped) (work|working|show|showing|load|loading|open|opening|start|starting|launch|launching|appear|appearing|detect|detecting|track|tracking|update|updating|going|go|respond|responding)\b`,
     String.raw`\b(is|are|seems?|still|now) (missing|wrong|incorrect|inaccurate|outdated|gone|blank|black|down|stuck)\b`,
+    // Missing map content without "is/are" ("new map missing the new collectible X", 2026-10-02):
+    // only next to a map word, so "missing you all" / "missing one piece" stay chat.
+    String.raw`\b(map|maps|marker|markers|icon|icons|filter|filters|pins?)\b[^.?!\n]{0,40}\bmissing\b`,
+    String.raw`\bmissing\b[^.?!\n]{0,40}\b(on|from|in) the (map|app|overlay)\b`,
+    String.raw`\b(not|isn'?t|aren'?t) (yet )?(on|in) the (map|app|overlay)\b`,
+    String.raw`\bno (marker|icon|filter|pin)s? (for|at)\b`,
     String.raw`\b(how (do|can|to|does)|where (is|are|do|can)|is there (a|any)|any(one|body) know|any (fix|idea|way))\b`,
     String.raw`\b(need help|help me|having (an?|the|this|same|some) (issue|problem|trouble)|an? (issue|problem) with)\b`,
     String.raw`\b(suggestion|feature request|would be (nice|great|cool|awesome)|please add|could you add|can you add|will there be)\b`,
