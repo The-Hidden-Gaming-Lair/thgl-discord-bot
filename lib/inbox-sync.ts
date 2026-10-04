@@ -150,6 +150,7 @@ export function snapshotBody(m: Message): IngestBody | null {
         `User context: ${context || "(none)"}`,
         `Version: ${field(m, "Version")}`,
         `Security: ${field(m, "Security")}`,
+        `Host: ${field(m, "Host") || "(not collected - older app build)"}`,
         `Files:\n${files.join("\n")}`,
         "Usually belongs to a support ticket from the same user: find it, analyse the snapshot there (memory feedback_support_ticket_read_snapshot) and close this item with the ticket.",
       ].join("\n"),
